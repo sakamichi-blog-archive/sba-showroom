@@ -1,0 +1,79 @@
+# sba-showroom
+
+SHOWROOM livestream downloader. Downloads as soon as a stream starts, or immediately for recorded episodes.
+
+## Requirements
+
+- Go 1.21+
+- [FFmpeg](https://ffmpeg.org/) — must be on `$PATH`
+
+## Installation
+
+```sh
+go install github.com/sakamichi-blog-archive/sba-showroom@latest
+```
+
+Or build from source:
+
+```sh
+go build -o sba-showroom .
+```
+
+## Usage
+
+```
+sba-showroom download [flags] URL [EXPECTED_TIME]
+```
+
+### URL formats
+
+```
+https://www.showroom-live.com/ROOM_URL_KEY
+https://www.showroom-live.com/r/ROOM_URL_KEY
+https://www.showroom-live.com/episode/watch?id=ID
+```
+
+### EXPECTED_TIME formats
+
+```
+HH:mm
+YYYY-MM-DD HH:mm
+YYYY/MM/DD HH:mm
+```
+
+When provided, the downloader waits until the given time before polling aggressively for the stream to go live.
+
+### Flags
+
+| Flag | Short | Default | Description |
+|------|-------|---------|-------------|
+| `--hls` | | `false` | Prefer HLS over RTMP |
+| `--retry` | `-r` | `false` | Restart download when stream ends |
+| `--output-dir` | `-o` | `.` | Directory to save recordings |
+
+### Examples
+
+```sh
+# Download a livestream room
+sba-showroom download https://www.showroom-live.com/46_iwamotorenka
+
+# With r/ prefix
+sba-showroom download https://www.showroom-live.com/r/46_iwamotorenka
+
+# Wait for a scheduled stream and retry on disconnect
+sba-showroom download https://www.showroom-live.com/46_iwamotorenka 17:30 --retry
+
+# Download a recorded episode
+sba-showroom download https://www.showroom-live.com/episode/watch?id=14
+
+# Save to a specific directory
+sba-showroom download https://www.showroom-live.com/46_iwamotorenka -o ~/Videos
+```
+
+## Output
+
+Files are named `YYMMDD-{room}-{4hex}.mp4`. For episodes, the file modification time is set to the stream's start time.
+
+## License
+
+MIT
