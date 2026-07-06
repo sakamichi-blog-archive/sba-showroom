@@ -8,17 +8,6 @@ Install [mise](https://mise.jdx.dev), then:
 mise install
 ```
 
-## Tasks
-
-| Command | Description |
-|---------|-------------|
-| `mise run build` | Build binary |
-| `mise run check` | Run all checks (format:check, lint, test) |
-| `mise run format` | Format Go source files |
-| `mise run format:check` | Check Go source files are formatted |
-| `mise run lint` | Lint Go source files |
-| `mise run test` | Run tests |
-
 ## golangci-lint
 
 The golangci-lint version must be kept in sync between `mise.toml` and the `version:` field in `.github/workflows/check.yml`.
