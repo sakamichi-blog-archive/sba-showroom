@@ -11,6 +11,10 @@ pinact = "4.1.0"
 run = "go build -o sba-showroom ."
 description = "Build binary"
 
+[tasks.check]
+depends = ["fmt:check", "lint", "test"]
+description = "Run all checks"
+
 [tasks.fmt]
 run = "gofmt -w ."
 description = "Format Go source files"
