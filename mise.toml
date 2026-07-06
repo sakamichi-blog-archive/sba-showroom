@@ -3,11 +3,17 @@ auto_install = false
 pin = true
 
 [tools]
+actionlint = "1.7.12"
 go = "1.26.4"
 golangci-lint = "2.12.2"
 pinact = "4.1.0"
+zizmor = "1.26.1"
 
 # Tasks are sorted alphabetically.
+[tasks.actionlint]
+run = "actionlint"
+description = "Lint GitHub Actions workflow files"
+
 [tasks.build]
 run = "go build -o sba-showroom ."
 description = "Build binary"
@@ -43,3 +49,7 @@ description = "Update GitHub Actions to latest versions and pin to commit SHAs"
 [tasks.test]
 run = "go test ./..."
 description = "Run tests"
+
+[tasks.zizmor]
+run = "zizmor ."
+description = "Scan GitHub Actions workflows for security issues"
