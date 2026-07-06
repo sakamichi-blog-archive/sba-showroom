@@ -8,6 +8,10 @@ Install [mise](https://mise.jdx.dev), then:
 mise install
 ```
 
+## Tasks
+
+Run `mise tasks` to list available tasks.
+
 ## golangci-lint
 
 The golangci-lint version must be kept in sync between `mise.toml` and the `version:` field in `.github/workflows/check.yml`.
