@@ -4,19 +4,20 @@ SHOWROOM livestream downloader. Downloads as soon as a stream starts, or immedia
 
 ## Requirements
 
-- Go 1.21+
 - [FFmpeg](https://ffmpeg.org/) — must be on `$PATH`
 
 ## Installation
 
+### GitHub Releases
+
+Download a pre-built binary from the [Releases](https://github.com/sakamichi-blog-archive/sba-showroom/releases) page.
+
+### go install
+
+Requires Go 1.21+.
+
 ```sh
 go install github.com/sakamichi-blog-archive/sba-showroom@latest
-```
-
-Or build from source:
-
-```sh
-go build -o sba-showroom .
 ```
 
 ## Usage
