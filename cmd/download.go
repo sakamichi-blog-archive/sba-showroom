@@ -11,7 +11,6 @@ import (
 
 func runDownload(args []string) {
 	fs := flag.NewFlagSet("download", flag.ExitOnError)
-	hls := fs.Bool("hls", false, "Prefer HLS over RTMP")
 	noRetry := fs.Bool("no-retry", false, "Stop after stream ends (retry is on by default)")
 	fs.Usage = func() {
 		fmt.Println("Usage: sba-showroom download [flags] URL [EXPECTED_TIME]")
@@ -49,7 +48,6 @@ func runDownload(args []string) {
 
 	opts := showroom.DownloadOptions{
 		URL:          rawURL,
-		PreferHLS:    *hls,
 		Retry:        !*noRetry,
 		ExpectedTime: expectedTime,
 	}

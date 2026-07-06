@@ -74,8 +74,8 @@ func TestFetchStreamingURLs(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		w.Write([]byte(`{
 			"streaming_url_list": [
-				{"type":"rtmp","quality":100,"url":"rtmp://example.com/live","stream_name":"stream1","is_default":true},
-				{"type":"hls","quality":100,"url":"https://example.com/live.m3u8","is_default":false}
+				{"type":"hls","quality":100,"url":"https://example.com/high.m3u8","is_default":true},
+				{"type":"hls","quality":10,"url":"https://example.com/low.m3u8","is_default":false}
 			]
 		}`))
 	}))

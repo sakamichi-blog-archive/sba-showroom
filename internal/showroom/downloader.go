@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/url"
 	"regexp"
-	"sort"
 	"strings"
 	"time"
 
@@ -17,7 +16,6 @@ var roomURLRegex = regexp.MustCompile(`(?i)^https://www\.showroom-live\.com/(r/(
 
 type DownloadOptions struct {
 	URL          string
-	PreferHLS    bool
 	Retry        bool
 	ExpectedTime *time.Time
 }
@@ -61,7 +59,6 @@ func downloadLive(opts DownloadOptions, urlNoQuery string) error {
 		if err := waitForLive(room, roomURLKey, &expectedTS); err != nil {
 			return err
 		}
-		// Re-fetch room after standby.
 		room, err = fetchRoom(roomURLKey)
 		if err != nil {
 			return fmt.Errorf("re-fetch room: %w", err)
@@ -93,8 +90,6 @@ func waitForLive(room *roomAPI, roomURLKey string, expectedTS *int64) error {
 				sleep = 30 * time.Second
 			case remaining > 0:
 				sleep = 20 * time.Second
-			default:
-				// Past expected time; check immediately.
 			}
 		}
 
@@ -120,8 +115,8 @@ func waitForLive(room *roomAPI, roomURLKey string, expectedTS *int64) error {
 }
 
 func runDownloadLoop(opts DownloadOptions, room *roomAPI, roomURLKey string, expectedTS int64) error {
-	for attempt := 0; ; attempt++ {
-		streamURL, streamType, err := resolveStreamURL(room.ID, opts.PreferHLS)
+	for {
+		streamURL, err := resolveHLSURL(room.ID)
 		if err != nil {
 			return err
 		}
@@ -130,22 +125,13 @@ func runDownloadLoop(opts DownloadOptions, room *roomAPI, roomURLKey string, exp
 		if ts == 0 {
 			ts = time.Now().Unix()
 		}
-		fileName := buildFileName(roomURLKey, ts) + ".mp4"
-		outPath := fileName
+		outPath := buildFileName(roomURLKey, ts) + ".mp4"
 
 		fmt.Printf("Status:    Live\n")
 		fmt.Printf("File:      %s\n", outPath)
 		fmt.Printf("Recording: %s\n", time.Now().Format("2006-01-02 15:04:05"))
 
-		var ffArgs []runner.FFmpegArgs
-		switch streamType {
-		case "rtmp":
-			ffArgs = []runner.FFmpegArgs{{Input: streamURL}}
-		case "hls":
-			ffArgs = []runner.FFmpegArgs{{Input: streamURL}}
-		}
-
-		runErr := runner.FFmpeg(ffArgs[0], outPath)
+		runErr := runner.FFmpeg(runner.FFmpegArgs{Input: streamURL}, outPath)
 
 		fmt.Printf("Finished:  %s\n", time.Now().Format("2006-01-02 15:04:05"))
 
@@ -158,7 +144,6 @@ func runDownloadLoop(opts DownloadOptions, room *roomAPI, roomURLKey string, exp
 			fmt.Printf("Retrying...\n")
 		}
 
-		// Re-fetch room state for the next attempt.
 		updated, err := fetchRoom(roomURLKey)
 		if err == nil {
 			room = updated
@@ -166,58 +151,30 @@ func runDownloadLoop(opts DownloadOptions, room *roomAPI, roomURLKey string, exp
 	}
 }
 
-func resolveStreamURL(roomID int, preferHLS bool) (streamURL, streamType string, err error) {
+func resolveHLSURL(roomID int) (string, error) {
 	for {
-		api, fetchErr := fetchStreamingURLs(roomID)
-		if fetchErr != nil {
-			fmt.Printf("  Error fetching streams: %s\n", fetchErr)
+		api, err := fetchStreamingURLs(roomID)
+		if err != nil {
+			fmt.Printf("  Error fetching streams: %s\n", err)
 			time.Sleep(4 * time.Second)
 			continue
 		}
 
-		u, t, ok := selectStream(api.StreamingURLList, preferHLS)
-		if ok {
-			return u, t, nil
+		var best *streamingURLItem
+		for i := range api.StreamingURLList {
+			item := &api.StreamingURLList[i]
+			if item.Type == "hls" && (best == nil || item.Quality > best.Quality) {
+				best = item
+			}
+		}
+		if best != nil {
+			return best.URL, nil
 		}
 
-		fmt.Println("  No streams found; retrying...")
+		fmt.Println("  No HLS streams found; retrying...")
 		time.Sleep(4 * time.Second)
 	}
 }
-
-func selectStream(items []streamingURLItem, preferHLS bool) (streamURL, streamType string, ok bool) {
-	var rtmpItems, hlsItems []streamingURLItem
-	for _, item := range items {
-		switch item.Type {
-		case "rtmp":
-			rtmpItems = append(rtmpItems, item)
-		case "hls":
-			hlsItems = append(hlsItems, item)
-		}
-	}
-	sort.Slice(rtmpItems, func(i, j int) bool { return rtmpItems[i].Quality > rtmpItems[j].Quality })
-	sort.Slice(hlsItems, func(i, j int) bool { return hlsItems[i].Quality > hlsItems[j].Quality })
-
-	if preferHLS {
-		if len(hlsItems) > 0 {
-			return hlsItems[0].URL, "hls", true
-		}
-		if len(rtmpItems) > 0 {
-			fmt.Println("  No HLS streams available. Using RTMP...")
-			return rtmpItems[0].URL + "/" + rtmpItems[0].StreamName, "rtmp", true
-		}
-	} else {
-		if len(rtmpItems) > 0 {
-			return rtmpItems[0].URL + "/" + rtmpItems[0].StreamName, "rtmp", true
-		}
-		if len(hlsItems) > 0 {
-			fmt.Println("  No RTMP streams available. Using HLS...")
-			return hlsItems[0].URL, "hls", true
-		}
-	}
-	return "", "", false
-}
-
 
 func buildFileName(name string, unixTS int64) string {
 	date := time.Unix(unixTS, 0).Format("060102")

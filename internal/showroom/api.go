@@ -28,11 +28,10 @@ type streamingURLAPI struct {
 }
 
 type streamingURLItem struct {
-	IsDefault  bool   `json:"is_default"`
-	Quality    int    `json:"quality"`
-	StreamName string `json:"stream_name"`
-	Type       string `json:"type"`
-	URL        string `json:"url"`
+	IsDefault bool   `json:"is_default"`
+	Quality   int    `json:"quality"`
+	Type      string `json:"type"`
+	URL       string `json:"url"`
 }
 
 

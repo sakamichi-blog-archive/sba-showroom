@@ -45,10 +45,9 @@ When provided, the downloader waits until the given time before polling aggressi
 
 ### Flags
 
-| Flag | Short | Default | Description |
-|------|-------|---------|-------------|
-| `--hls` | | `false` | Prefer HLS over RTMP |
-| `--no-retry` | | `false` | Stop after stream ends (retry is on by default) |
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--no-retry` | `false` | Stop after stream ends (retry is on by default) |
 
 ### Examples
 
