@@ -19,6 +19,11 @@ jobs:
           - {goos: darwin, goarch: amd64}
           - {goos: darwin, goarch: arm64}
           - {goos: windows, goarch: amd64}
+    env:
+      GOOS: ${{ matrix.goos }}
+      GOARCH: ${{ matrix.goarch }}
+      TAG: ${{ github.ref_name }}
+      GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
@@ -29,12 +34,9 @@ jobs:
           cache: false
       - name: Build
         run: |
-          NAME="sba-showroom-${TAG}-${{ matrix.goos }}-${{ matrix.goarch }}"
-          [ "${{ matrix.goos }}" = "windows" ] && NAME="${NAME}.exe"
-          GOOS="${{ matrix.goos }}" GOARCH="${{ matrix.goarch }}" go build -o "${NAME}" .
+          NAME="sba-showroom-${TAG}-${GOOS}-${GOARCH}"
+          [ "${GOOS}" = "windows" ] && NAME="${NAME}.exe"
+          go build -o "${NAME}" .
           echo "BINARY=${NAME}" >> "${GITHUB_ENV}"
       - name: Upload to release
-        env:
-          GH_TOKEN: ${{ github.token }}
-          TAG: ${{ github.ref_name }}
         run: gh release upload "${TAG}" "${BINARY}"
