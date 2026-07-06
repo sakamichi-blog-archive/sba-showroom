@@ -19,8 +19,16 @@ mise install
 
 ## GitHub Actions
 
-When adding or updating GitHub Actions, pin them to a commit SHA using [pinact](https://github.com/suzuki-shunsuke/pinact):
+GitHub Actions are pinned to commit SHAs using [pinact](https://github.com/suzuki-shunsuke/pinact). The `--min-age 3` flag skips versions released less than 3 days ago.
+
+After adding a new action:
 
 ```sh
-pinact run .github/workflows/*.yml
+pinact run --min-age 3 .github/workflows/*.yml
+```
+
+To update existing actions to their latest versions:
+
+```sh
+pinact run --update --min-age 3 .github/workflows/*.yml
 ```
