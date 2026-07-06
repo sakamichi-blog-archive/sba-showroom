@@ -5,6 +5,7 @@ pin = true
 [tools]
 go = "1.26.4"
 golangci-lint = "2.12.2"
+pinact = "4.1.0"
 
 [tasks.build]
 run = "go build -o sba-showroom ."
