@@ -28,7 +28,7 @@ jobs:
           cache: false
       - name: Build
         run: |
-          NAME="sba-showroom-${{ matrix.goos }}-${{ matrix.goarch }}"
+          NAME="sba-showroom-${TAG}-${{ matrix.goos }}-${{ matrix.goarch }}"
           [ "${{ matrix.goos }}" = "windows" ] && NAME="${NAME}.exe"
           GOOS="${{ matrix.goos }}" GOARCH="${{ matrix.goarch }}" go build -o "${NAME}" .
           echo "BINARY=${NAME}" >> "${GITHUB_ENV}"
