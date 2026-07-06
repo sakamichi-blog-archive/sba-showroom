@@ -20,7 +20,7 @@ type episodeStream struct {
 }
 
 func fetchEpisode(rawURL, episodeID string) (*episodeStream, error) {
-	req, err := http.NewRequest("GET", "https://www.showroom-live.com/episode/watch?id="+episodeID, nil)
+	req, err := http.NewRequest("GET", showroomBaseURL+"/episode/watch?id="+episodeID, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -115,7 +115,7 @@ func findAttr(n *html.Node, tag, keyAttr, keyVal, targetAttr string) string {
 
 func fetchEpisodeStreamingURL(referer, episodeID string) (*http.Response, error) {
 	req, err := http.NewRequest("GET",
-		"https://www.showroom-live.com/api/episode/streaming_url?episode_id="+episodeID,
+		showroomBaseURL+"/api/episode/streaming_url?episode_id="+episodeID,
 		nil,
 	)
 	if err != nil {

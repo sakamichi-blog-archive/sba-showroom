@@ -188,39 +188,47 @@ func resolveStreamURL(roomID int, preferHLS bool) (streamURL, streamType string,
 			continue
 		}
 
-		var rtmpItems, hlsItems []streamingURLItem
-		for _, item := range api.StreamingURLList {
-			switch item.Type {
-			case "rtmp":
-				rtmpItems = append(rtmpItems, item)
-			case "hls":
-				hlsItems = append(hlsItems, item)
-			}
-		}
-		sort.Slice(rtmpItems, func(i, j int) bool { return rtmpItems[i].Quality > rtmpItems[j].Quality })
-		sort.Slice(hlsItems, func(i, j int) bool { return hlsItems[i].Quality > hlsItems[j].Quality })
-
-		if preferHLS {
-			if len(hlsItems) > 0 {
-				return hlsItems[0].URL, "hls", nil
-			}
-			if len(rtmpItems) > 0 {
-				fmt.Println("  No HLS streams available. Using RTMP...")
-				return rtmpItems[0].URL + "/" + rtmpItems[0].StreamName, "rtmp", nil
-			}
-		} else {
-			if len(rtmpItems) > 0 {
-				return rtmpItems[0].URL + "/" + rtmpItems[0].StreamName, "rtmp", nil
-			}
-			if len(hlsItems) > 0 {
-				fmt.Println("  No RTMP streams available. Using HLS...")
-				return hlsItems[0].URL, "hls", nil
-			}
+		u, t, ok := selectStream(api.StreamingURLList, preferHLS)
+		if ok {
+			return u, t, nil
 		}
 
 		fmt.Println("  No streams found; retrying...")
 		time.Sleep(4 * time.Second)
 	}
+}
+
+func selectStream(items []streamingURLItem, preferHLS bool) (streamURL, streamType string, ok bool) {
+	var rtmpItems, hlsItems []streamingURLItem
+	for _, item := range items {
+		switch item.Type {
+		case "rtmp":
+			rtmpItems = append(rtmpItems, item)
+		case "hls":
+			hlsItems = append(hlsItems, item)
+		}
+	}
+	sort.Slice(rtmpItems, func(i, j int) bool { return rtmpItems[i].Quality > rtmpItems[j].Quality })
+	sort.Slice(hlsItems, func(i, j int) bool { return hlsItems[i].Quality > hlsItems[j].Quality })
+
+	if preferHLS {
+		if len(hlsItems) > 0 {
+			return hlsItems[0].URL, "hls", true
+		}
+		if len(rtmpItems) > 0 {
+			fmt.Println("  No HLS streams available. Using RTMP...")
+			return rtmpItems[0].URL + "/" + rtmpItems[0].StreamName, "rtmp", true
+		}
+	} else {
+		if len(rtmpItems) > 0 {
+			return rtmpItems[0].URL + "/" + rtmpItems[0].StreamName, "rtmp", true
+		}
+		if len(hlsItems) > 0 {
+			fmt.Println("  No RTMP streams available. Using HLS...")
+			return hlsItems[0].URL, "hls", true
+		}
+	}
+	return "", "", false
 }
 
 func downloadEpisode(opts DownloadOptions) error {

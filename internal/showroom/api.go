@@ -10,6 +10,11 @@ import (
 
 const userAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.181 Safari/537.36"
 
+var (
+	cdnBaseURL      = "https://public-api.showroom-cdn.com"
+	showroomBaseURL = "https://www.showroom-live.com"
+)
+
 type roomAPI struct {
 	ID               int    `json:"id"`
 	IsLive           bool   `json:"is_live"`
@@ -85,13 +90,13 @@ func getJSON(url, referer string, out interface{}) (*http.Response, error) {
 
 func fetchRoom(roomURLKey string) (*roomAPI, error) {
 	var room roomAPI
-	_, err := getJSON("https://public-api.showroom-cdn.com/room/"+roomURLKey, "", &room)
+	_, err := getJSON(cdnBaseURL+"/room/"+roomURLKey, "", &room)
 	return &room, err
 }
 
 func fetchStreamingURLs(roomID int) (*streamingURLAPI, error) {
 	url := fmt.Sprintf(
-		"https://www.showroom-live.com/api/live/streaming_url?room_id=%d&ignore_low_stream=1",
+		showroomBaseURL+"/api/live/streaming_url?room_id=%d&ignore_low_stream=1",
 		roomID,
 	)
 	var api streamingURLAPI
