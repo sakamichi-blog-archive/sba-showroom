@@ -31,7 +31,6 @@ sba-showroom download [flags] URL [EXPECTED_TIME]
 ```
 https://www.showroom-live.com/ROOM_URL_KEY
 https://www.showroom-live.com/r/ROOM_URL_KEY
-https://www.showroom-live.com/episode/watch?id=ID
 ```
 
 ### EXPECTED_TIME formats
@@ -65,9 +64,6 @@ sba-showroom download https://www.showroom-live.com/46_iwamotorenka 17:30
 
 # Download once without retrying
 sba-showroom download https://www.showroom-live.com/46_iwamotorenka --no-retry
-
-# Download a recorded episode
-sba-showroom download https://www.showroom-live.com/episode/watch?id=14
 
 ```
 

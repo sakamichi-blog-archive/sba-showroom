@@ -21,7 +21,6 @@ var downloadCmd = &cobra.Command{
 URL formats:
   https://www.showroom-live.com/ROOM_URL_KEY
   https://www.showroom-live.com/r/ROOM_URL_KEY
-  https://www.showroom-live.com/episode/watch?id=ID
 
 EXPECTED_TIME formats (for livestreams):
   HH:mm
@@ -29,7 +28,6 @@ EXPECTED_TIME formats (for livestreams):
   YYYY/MM/DD HH:mm`,
 	Example: `  sba-showroom download https://www.showroom-live.com/46_iwamotorenka
   sba-showroom download https://www.showroom-live.com/r/46_iwamotorenka
-  sba-showroom download https://www.showroom-live.com/episode/watch?id=14
   sba-showroom download https://www.showroom-live.com/46_iwamotorenka 17:30 --no-retry`,
 	Args: cobra.RangeArgs(1, 2),
 	RunE: runDownload,

@@ -35,27 +35,6 @@ type streamingURLItem struct {
 	URL        string `json:"url"`
 }
 
-type episodeData struct {
-	Description      string      `json:"description"`
-	DisplayEndedAt   interface{} `json:"display_ended_at"`
-	DisplayStartedAt int64       `json:"display_started_at"`
-	DisplayStatus    int         `json:"display_status"`
-	ID               string      `json:"id"`
-	Series           struct {
-		Name string `json:"name"`
-	} `json:"series"`
-	Title   string `json:"title"`
-	VideoID int    `json:"video_id"`
-}
-
-type episodeStreamingURLAPI struct {
-	StreamingURLList struct {
-		HLSAll struct {
-			HLSAll  string `json:"hls_all"`
-			Quality string `json:"quality"`
-		} `json:"hls_all"`
-	} `json:"streaming_url_list"`
-}
 
 func getJSON(url, referer string, out interface{}) (*http.Response, error) {
 	req, err := http.NewRequest("GET", url, nil)

@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"net/url"
-	"os"
 	"regexp"
 	"sort"
 	"strings"
@@ -28,15 +27,8 @@ func Download(opts DownloadOptions) error {
 	if err != nil {
 		return fmt.Errorf("invalid URL: %w", err)
 	}
-
-	// Strip query string for regex matching.
 	urlNoQuery := *u
 	urlNoQuery.RawQuery = ""
-
-	if u.Path == "/episode/watch" {
-		return downloadEpisode(opts)
-	}
-
 	return downloadLive(opts, urlNoQuery.String())
 }
 
@@ -226,43 +218,6 @@ func selectStream(items []streamingURLItem, preferHLS bool) (streamURL, streamTy
 	return "", "", false
 }
 
-func downloadEpisode(opts DownloadOptions) error {
-	u, _ := url.Parse(opts.URL)
-	episodeID := u.Query().Get("id")
-	if episodeID == "" {
-		return fmt.Errorf("missing episode ID in URL")
-	}
-
-	fmt.Printf("Fetching episode %s...\n", episodeID)
-	ep, err := fetchEpisode(opts.URL, episodeID)
-	if err != nil {
-		return fmt.Errorf("fetch episode: %w", err)
-	}
-
-	fmt.Printf("Series:  %s\n", ep.series)
-	fmt.Printf("Episode: %s\n", ep.title)
-
-	ts := ep.startedAt.Unix()
-	fileName := buildFileName(ep.title, ts) + ".mp4"
-	outPath := fileName
-
-	fmt.Printf("File:      %s\n", outPath)
-	fmt.Printf("Recording: %s\n", time.Now().Format("2006-01-02 15:04:05"))
-
-	args := runner.FFmpegArgs{
-		Input:   ep.streamURL,
-		Headers: map[string]string{"Cookie": ep.cookies},
-	}
-	if err := runner.FFmpeg(args, outPath); err != nil {
-		return fmt.Errorf("ffmpeg: %w", err)
-	}
-
-	// Set file mtime to stream start time.
-	_ = os.Chtimes(outPath, ep.startedAt, ep.startedAt)
-
-	fmt.Printf("Finished:  %s\n", time.Now().Format("2006-01-02 15:04:05"))
-	return nil
-}
 
 func buildFileName(name string, unixTS int64) string {
 	date := time.Unix(unixTS, 0).Format("060102")
