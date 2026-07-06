@@ -10,7 +10,7 @@ mise install
 
 ## Tasks
 
-Run `mise tasks` to list available tasks.
+mise tasks are the single source of definition for frequently-used scripts, shared between local development and CI. Run `mise tasks` to list them.
 
 ## golangci-lint
 
