@@ -5,3 +5,19 @@ pin = true
 [tools]
 go = "1.26.4"
 golangci-lint = "2.12.2"
+
+[tasks.build]
+run = "go build -o sba-showroom ."
+description = "Build binary"
+
+[tasks.fmt]
+run = "gofmt -w ."
+description = "Format Go source files"
+
+[tasks.lint]
+run = "golangci-lint run ./..."
+description = "Lint Go source files"
+
+[tasks.test]
+run = "go test ./..."
+description = "Run tests"

@@ -8,14 +8,11 @@ Install [mise](https://mise.jdx.dev), then:
 mise install
 ```
 
-## Building
+## Tasks
 
-```sh
-go build -o sba-showroom .
-```
-
-## Testing
-
-```sh
-go test ./...
-```
+| Command | Description |
+|---------|-------------|
+| `mise run build` | Build binary |
+| `mise run fmt` | Format Go source files |
+| `mise run lint` | Lint Go source files |
+| `mise run test` | Run tests |
