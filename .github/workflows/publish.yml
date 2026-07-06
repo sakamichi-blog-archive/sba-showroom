@@ -40,4 +40,4 @@ jobs:
       - name: Upload to release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload "${TAG}" "${BINARY}"
+        run: gh release upload --clobber "${TAG}" "${BINARY}"
