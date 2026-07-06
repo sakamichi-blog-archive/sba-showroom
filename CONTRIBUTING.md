@@ -17,6 +17,10 @@ mise install
 | `mise run lint` | Lint Go source files |
 | `mise run test` | Run tests |
 
+## golangci-lint
+
+The golangci-lint version must be kept in sync between `mise.toml` and the `version:` field in `.github/workflows/check.yml`.
+
 ## GitHub Actions
 
 GitHub Actions are pinned to commit SHAs using [pinact](https://github.com/suzuki-shunsuke/pinact). The `--min-age 3` flag skips versions released less than 3 days ago.
