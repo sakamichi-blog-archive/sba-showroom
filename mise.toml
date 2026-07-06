@@ -15,6 +15,10 @@ description = "Build binary"
 run = "gofmt -w ."
 description = "Format Go source files"
 
+[tasks."fmt:check"]
+run = 'test -z "$(gofmt -l .)"'
+description = "Check Go source files are formatted"
+
 [tasks.lint]
 run = "golangci-lint run ./..."
 description = "Lint Go source files"
