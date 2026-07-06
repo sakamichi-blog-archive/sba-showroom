@@ -23,11 +23,11 @@ GitHub Actions are pinned to commit SHAs using [pinact](https://github.com/suzuk
 After adding a new action:
 
 ```sh
-pinact run --min-age 3 .github/workflows/*.yml
+mise run pinact
 ```
 
 To update existing actions to their latest versions:
 
 ```sh
-pinact run --update --min-age 3 .github/workflows/*.yml
+mise run pinact:update
 ```

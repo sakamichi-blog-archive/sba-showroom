@@ -28,6 +28,14 @@ description = "Check Go source files are formatted"
 run = "golangci-lint run ./..."
 description = "Lint Go source files"
 
+[tasks.pinact]
+run = "pinact run --min-age 3 .github/workflows/*.yml"
+description = "Pin GitHub Actions to commit SHAs"
+
+[tasks."pinact:update"]
+run = "pinact run --update --min-age 3 .github/workflows/*.yml"
+description = "Update GitHub Actions to latest versions and pin to commit SHAs"
+
 [tasks.test]
 run = "go test ./..."
 description = "Run tests"
