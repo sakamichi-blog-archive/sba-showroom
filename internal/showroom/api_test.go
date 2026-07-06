@@ -13,7 +13,7 @@ func TestFetchRoom(t *testing.T) {
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"id":123,"is_live":true,"name":"Renka Iwamoto","next_live_schedule":0,"url_key":"46_iwamotorenka"}`))
+		_, _ = w.Write([]byte(`{"id":123,"is_live":true,"name":"Renka Iwamoto","next_live_schedule":0,"url_key":"46_iwamotorenka"}`))
 	}))
 	defer srv.Close()
 
@@ -55,7 +55,7 @@ func TestFetchRoom_NonOK(t *testing.T) {
 func TestFetchRoom_WrongContentType(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html")
-		w.Write([]byte(`<html></html>`))
+		_, _ = w.Write([]byte(`<html></html>`))
 	}))
 	defer srv.Close()
 
@@ -72,7 +72,7 @@ func TestFetchRoom_WrongContentType(t *testing.T) {
 func TestFetchStreamingURLs(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{
+		_, _ = w.Write([]byte(`{
 			"streaming_url_list": [
 				{"type":"hls","quality":100,"url":"https://example.com/high.m3u8","is_default":true},
 				{"type":"hls","quality":10,"url":"https://example.com/low.m3u8","is_default":false}

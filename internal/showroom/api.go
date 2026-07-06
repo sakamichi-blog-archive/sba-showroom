@@ -34,7 +34,6 @@ type streamingURLItem struct {
 	URL       string `json:"url"`
 }
 
-
 func getJSON(url, referer string, out interface{}) (*http.Response, error) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -49,7 +48,7 @@ func getJSON(url, referer string, out interface{}) (*http.Response, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return resp, fmt.Errorf("HTTP %d", resp.StatusCode)

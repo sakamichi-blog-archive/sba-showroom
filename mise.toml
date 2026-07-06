@@ -4,3 +4,42 @@ pin = true
 
 [tools]
 go = "1.26.4"
+golangci-lint = "2.12.2"
+pinact = "4.1.0"
+
+# Tasks are sorted alphabetically.
+[tasks.build]
+run = "go build -o sba-showroom ."
+description = "Build binary"
+
+[tasks.check]
+depends = ["format:check", "lint", "pinact:check", "test"]
+description = "Run all checks"
+
+[tasks.format]
+run = "gofmt -w ."
+description = "Format Go source files"
+
+[tasks."format:check"]
+run = 'test -z "$(gofmt -l .)"'
+description = "Check Go source files are formatted"
+
+[tasks.lint]
+run = "golangci-lint run ./..."
+description = "Lint Go source files"
+
+[tasks.pinact]
+run = "pinact run --min-age 3 .github/workflows/*.yml"
+description = "Pin GitHub Actions to commit SHAs"
+
+[tasks."pinact:check"]
+run = "pinact run --check .github/workflows/*.yml"
+description = "Check GitHub Actions are pinned to commit SHAs"
+
+[tasks."pinact:update"]
+run = "pinact run --update --min-age 3 .github/workflows/*.yml"
+description = "Update GitHub Actions to latest versions and pin to commit SHAs"
+
+[tasks.test]
+run = "go test ./..."
+description = "Run tests"
