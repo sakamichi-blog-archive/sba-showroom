@@ -9,9 +9,8 @@ import (
 )
 
 var (
-	flagHLS       bool
-	flagRetry     bool
-	flagOutputDir string
+	flagHLS   bool
+	flagRetry bool
 )
 
 var downloadCmd = &cobra.Command{
@@ -39,7 +38,6 @@ EXPECTED_TIME formats (for livestreams):
 func init() {
 	downloadCmd.Flags().BoolVar(&flagHLS, "hls", false, "Prefer HLS over RTMP")
 	downloadCmd.Flags().BoolVarP(&flagRetry, "retry", "r", false, "Retry on finish")
-	downloadCmd.Flags().StringVarP(&flagOutputDir, "output-dir", "o", ".", "Output directory")
 }
 
 func runDownload(cmd *cobra.Command, args []string) error {
@@ -58,7 +56,6 @@ func runDownload(cmd *cobra.Command, args []string) error {
 		URL:          rawURL,
 		PreferHLS:    flagHLS,
 		Retry:        flagRetry,
-		OutputDir:    flagOutputDir,
 		ExpectedTime: expectedTime,
 	}
 	return showroom.Download(opts)

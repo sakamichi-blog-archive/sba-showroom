@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/url"
 	"os"
-	"path/filepath"
 	"regexp"
 	"sort"
 	"strings"
@@ -21,7 +20,6 @@ type DownloadOptions struct {
 	URL          string
 	PreferHLS    bool
 	Retry        bool
-	OutputDir    string
 	ExpectedTime *time.Time
 }
 
@@ -141,10 +139,7 @@ func runDownloadLoop(opts DownloadOptions, room *roomAPI, roomURLKey string, exp
 			ts = time.Now().Unix()
 		}
 		fileName := buildFileName(roomURLKey, ts) + ".mp4"
-		outPath := filepath.Join(opts.OutputDir, fileName)
-		if err := os.MkdirAll(opts.OutputDir, 0o755); err != nil {
-			return err
-		}
+		outPath := fileName
 
 		fmt.Printf("Status:    Live\n")
 		fmt.Printf("File:      %s\n", outPath)
@@ -249,10 +244,7 @@ func downloadEpisode(opts DownloadOptions) error {
 
 	ts := ep.startedAt.Unix()
 	fileName := buildFileName(ep.title, ts) + ".mp4"
-	outPath := filepath.Join(opts.OutputDir, fileName)
-	if err := os.MkdirAll(opts.OutputDir, 0o755); err != nil {
-		return err
-	}
+	outPath := fileName
 
 	fmt.Printf("File:      %s\n", outPath)
 	fmt.Printf("Recording: %s\n", time.Now().Format("2006-01-02 15:04:05"))

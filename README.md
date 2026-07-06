@@ -49,7 +49,6 @@ When provided, the downloader waits until the given time before polling aggressi
 |------|-------|---------|-------------|
 | `--hls` | | `false` | Prefer HLS over RTMP |
 | `--retry` | `-r` | `false` | Restart download when stream ends |
-| `--output-dir` | `-o` | `.` | Directory to save recordings |
 
 ### Examples
 
@@ -66,8 +65,6 @@ sba-showroom download https://www.showroom-live.com/46_iwamotorenka 17:30 --retr
 # Download a recorded episode
 sba-showroom download https://www.showroom-live.com/episode/watch?id=14
 
-# Save to a specific directory
-sba-showroom download https://www.showroom-live.com/46_iwamotorenka -o ~/Videos
 ```
 
 ## Output
