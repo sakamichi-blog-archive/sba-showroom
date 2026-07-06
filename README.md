@@ -48,7 +48,7 @@ When provided, the downloader waits until the given time before polling aggressi
 | Flag | Short | Default | Description |
 |------|-------|---------|-------------|
 | `--hls` | | `false` | Prefer HLS over RTMP |
-| `--retry` | `-r` | `false` | Restart download when stream ends |
+| `--no-retry` | | `false` | Stop after stream ends (retry is on by default) |
 
 ### Examples
 
@@ -59,8 +59,11 @@ sba-showroom download https://www.showroom-live.com/46_iwamotorenka
 # With r/ prefix
 sba-showroom download https://www.showroom-live.com/r/46_iwamotorenka
 
-# Wait for a scheduled stream and retry on disconnect
-sba-showroom download https://www.showroom-live.com/46_iwamotorenka 17:30 --retry
+# Wait for a scheduled stream (retries on disconnect by default)
+sba-showroom download https://www.showroom-live.com/46_iwamotorenka 17:30
+
+# Download once without retrying
+sba-showroom download https://www.showroom-live.com/46_iwamotorenka --no-retry
 
 # Download a recorded episode
 sba-showroom download https://www.showroom-live.com/episode/watch?id=14

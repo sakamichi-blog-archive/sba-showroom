@@ -9,8 +9,8 @@ import (
 )
 
 var (
-	flagHLS   bool
-	flagRetry bool
+	flagHLS     bool
+	flagNoRetry bool
 )
 
 var downloadCmd = &cobra.Command{
@@ -30,14 +30,14 @@ EXPECTED_TIME formats (for livestreams):
 	Example: `  sba-showroom download https://www.showroom-live.com/46_iwamotorenka
   sba-showroom download https://www.showroom-live.com/r/46_iwamotorenka
   sba-showroom download https://www.showroom-live.com/episode/watch?id=14
-  sba-showroom download https://www.showroom-live.com/46_iwamotorenka 17:30 --retry`,
+  sba-showroom download https://www.showroom-live.com/46_iwamotorenka 17:30 --no-retry`,
 	Args: cobra.RangeArgs(1, 2),
 	RunE: runDownload,
 }
 
 func init() {
 	downloadCmd.Flags().BoolVar(&flagHLS, "hls", false, "Prefer HLS over RTMP")
-	downloadCmd.Flags().BoolVarP(&flagRetry, "retry", "r", false, "Retry on finish")
+	downloadCmd.Flags().BoolVar(&flagNoRetry, "no-retry", false, "Stop after stream ends")
 }
 
 func runDownload(cmd *cobra.Command, args []string) error {
@@ -55,7 +55,7 @@ func runDownload(cmd *cobra.Command, args []string) error {
 	opts := showroom.DownloadOptions{
 		URL:          rawURL,
 		PreferHLS:    flagHLS,
-		Retry:        flagRetry,
+		Retry:        !flagNoRetry,
 		ExpectedTime: expectedTime,
 	}
 	return showroom.Download(opts)
