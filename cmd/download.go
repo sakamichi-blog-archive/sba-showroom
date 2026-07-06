@@ -27,7 +27,7 @@ func runDownload(args []string) {
 		fmt.Println("Flags:")
 		fs.PrintDefaults()
 	}
-	fs.Parse(args)
+	_ = fs.Parse(args) // ExitOnError: never returns non-nil
 
 	positional := fs.Args()
 	if len(positional) < 1 {
