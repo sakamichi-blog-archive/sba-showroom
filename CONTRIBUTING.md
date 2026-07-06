@@ -13,9 +13,9 @@ mise install
 | Command | Description |
 |---------|-------------|
 | `mise run build` | Build binary |
-| `mise run check` | Run all checks (fmt:check, lint, test) |
-| `mise run fmt` | Format Go source files |
-| `mise run fmt:check` | Check Go source files are formatted |
+| `mise run check` | Run all checks (format:check, lint, test) |
+| `mise run format` | Format Go source files |
+| `mise run format:check` | Check Go source files are formatted |
 | `mise run lint` | Lint Go source files |
 | `mise run test` | Run tests |
 

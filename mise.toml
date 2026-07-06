@@ -13,14 +13,14 @@ run = "go build -o sba-showroom ."
 description = "Build binary"
 
 [tasks.check]
-depends = ["fmt:check", "lint", "test"]
+depends = ["format:check", "lint", "test"]
 description = "Run all checks"
 
-[tasks.fmt]
+[tasks.format]
 run = "gofmt -w ."
 description = "Format Go source files"
 
-[tasks."fmt:check"]
+[tasks."format:check"]
 run = 'test -z "$(gofmt -l .)"'
 description = "Check Go source files are formatted"
 
