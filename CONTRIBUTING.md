@@ -24,6 +24,16 @@ mise tasks are the single source of definition for frequently-used scripts, shar
 
 The golangci-lint version must be kept in sync between `mise.toml` and the `version:` field in `.github/workflows/check.yml`.
 
+## Releasing
+
+Releases are automated via [Release Please](https://github.com/googleapis/release-please):
+
+1. Conventional commits merged to `main` are analyzed by Release Please, which opens or updates a Release PR with a bumped version and updated changelog.
+2. Merging the Release PR creates a GitHub Release and tag.
+3. The publish workflow triggers on the release and builds binaries for Linux, macOS, and Windows, uploading them to the release.
+
+No manual steps are required — commit messages drive the version bump (feat → minor, fix → patch, breaking change → major).
+
 ## GitHub Actions
 
 GitHub Actions are pinned to commit SHAs using [pinact](https://github.com/suzuki-shunsuke/pinact). The `--min-age 3` flag skips versions released less than 3 days ago.
