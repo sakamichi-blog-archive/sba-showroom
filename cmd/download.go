@@ -1,62 +1,62 @@
 package cmd
 
 import (
+	"flag"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/sakamichi-blog-archive/sba-showroom/internal/showroom"
-	"github.com/spf13/cobra"
 )
 
-var (
-	flagHLS     bool
-	flagNoRetry bool
-)
+func runDownload(args []string) {
+	fs := flag.NewFlagSet("download", flag.ExitOnError)
+	hls := fs.Bool("hls", false, "Prefer HLS over RTMP")
+	noRetry := fs.Bool("no-retry", false, "Stop after stream ends (retry is on by default)")
+	fs.Usage = func() {
+		fmt.Println("Usage: sba-showroom download [flags] URL [EXPECTED_TIME]")
+		fmt.Println()
+		fmt.Println("URL formats:")
+		fmt.Println("  https://www.showroom-live.com/ROOM_URL_KEY")
+		fmt.Println("  https://www.showroom-live.com/r/ROOM_URL_KEY")
+		fmt.Println()
+		fmt.Println("EXPECTED_TIME formats:")
+		fmt.Println("  HH:mm")
+		fmt.Println("  YYYY-MM-DD HH:mm")
+		fmt.Println("  YYYY/MM/DD HH:mm")
+		fmt.Println()
+		fmt.Println("Flags:")
+		fs.PrintDefaults()
+	}
+	fs.Parse(args)
 
-var downloadCmd = &cobra.Command{
-	Use:   "download URL [EXPECTED_TIME]",
-	Short: "Download a SHOWROOM livestream or episode",
-	Long: `Download a SHOWROOM livestream or recorded episode.
+	positional := fs.Args()
+	if len(positional) < 1 {
+		fs.Usage()
+		os.Exit(1)
+	}
 
-URL formats:
-  https://www.showroom-live.com/ROOM_URL_KEY
-  https://www.showroom-live.com/r/ROOM_URL_KEY
-
-EXPECTED_TIME formats (for livestreams):
-  HH:mm
-  YYYY-MM-DD HH:mm
-  YYYY/MM/DD HH:mm`,
-	Example: `  sba-showroom download https://www.showroom-live.com/46_iwamotorenka
-  sba-showroom download https://www.showroom-live.com/r/46_iwamotorenka
-  sba-showroom download https://www.showroom-live.com/46_iwamotorenka 17:30 --no-retry`,
-	Args: cobra.RangeArgs(1, 2),
-	RunE: runDownload,
-}
-
-func init() {
-	downloadCmd.Flags().BoolVar(&flagHLS, "hls", false, "Prefer HLS over RTMP")
-	downloadCmd.Flags().BoolVar(&flagNoRetry, "no-retry", false, "Stop after stream ends")
-}
-
-func runDownload(cmd *cobra.Command, args []string) error {
-	rawURL := args[0]
-
+	rawURL := positional[0]
 	var expectedTime *time.Time
-	if len(args) == 2 {
-		t, err := parseExpectedTime(args[1])
+	if len(positional) >= 2 {
+		t, err := parseExpectedTime(positional[1])
 		if err != nil {
-			return fmt.Errorf("invalid expected time %q: %w", args[1], err)
+			fmt.Fprintf(os.Stderr, "error: invalid expected time %q: %v\n", positional[1], err)
+			os.Exit(1)
 		}
 		expectedTime = &t
 	}
 
 	opts := showroom.DownloadOptions{
 		URL:          rawURL,
-		PreferHLS:    flagHLS,
-		Retry:        !flagNoRetry,
+		PreferHLS:    *hls,
+		Retry:        !*noRetry,
 		ExpectedTime: expectedTime,
 	}
-	return showroom.Download(opts)
+	if err := showroom.Download(opts); err != nil {
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		os.Exit(1)
+	}
 }
 
 var timeFormats = []string{
@@ -71,7 +71,6 @@ func parseExpectedTime(s string) (time.Time, error) {
 		if layout == "15:04" {
 			t, err := time.ParseInLocation("15:04", s, time.Local)
 			if err == nil {
-				// Combine today's date with parsed time.
 				return time.Date(now.Year(), now.Month(), now.Day(), t.Hour(), t.Minute(), 0, 0, time.Local), nil
 			}
 			continue

@@ -1,22 +1,31 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
-
-	"github.com/spf13/cobra"
 )
 
-var rootCmd = &cobra.Command{
-	Use:   "sba-showroom",
-	Short: "SHOWROOM livestream downloader",
-}
-
 func Execute() {
-	if err := rootCmd.Execute(); err != nil {
+	if len(os.Args) < 2 {
+		printUsage()
+		os.Exit(1)
+	}
+
+	switch os.Args[1] {
+	case "download":
+		runDownload(os.Args[2:])
+	case "-h", "--help", "help":
+		printUsage()
+	default:
+		fmt.Fprintf(os.Stderr, "unknown command: %s\n\n", os.Args[1])
+		printUsage()
 		os.Exit(1)
 	}
 }
 
-func init() {
-	rootCmd.AddCommand(downloadCmd)
+func printUsage() {
+	fmt.Println("Usage: sba-showroom <command> [flags]")
+	fmt.Println()
+	fmt.Println("Commands:")
+	fmt.Println("  download  Download a SHOWROOM livestream")
 }
