@@ -11,10 +11,6 @@ shellcheck = "0.11.0"
 zizmor = "1.26.1"
 
 # Tasks are sorted alphabetically.
-[tasks.actionlint]
-run = "actionlint"
-description = "Lint GitHub Actions workflow files"
-
 [tasks.build]
 run = "go build -o sba-showroom ."
 description = "Build binary"
@@ -22,6 +18,10 @@ description = "Build binary"
 [tasks.check]
 depends = ["format:check", "lint", "pinact:check", "test"]
 description = "Run all checks"
+
+[tasks."check:workflows"]
+run = ["actionlint", "zizmor .", "pinact run --check .github/workflows/*.yml"]
+description = "Run all workflow checks"
 
 [tasks.format]
 run = "gofmt -w ."
@@ -51,6 +51,3 @@ description = "Update GitHub Actions to latest versions and pin to commit SHAs"
 run = "go test ./..."
 description = "Run tests"
 
-[tasks.zizmor]
-run = "zizmor ."
-description = "Scan GitHub Actions workflows for security issues"
