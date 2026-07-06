@@ -20,7 +20,8 @@ depends = ["format:check", "lint", "pinact:check", "test"]
 description = "Run all checks"
 
 [tasks."check:workflows"]
-run = ["actionlint", "zizmor .", "pinact run --check .github/workflows/*.yml"]
+depends = ["pinact:check"]
+run = ["actionlint", "zizmor ."]
 description = "Run all workflow checks"
 
 [tasks.format]
