@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/sakamichi-blog-archive/sba-showroom-downloader/internal/showroom"
+	"github.com/sakamichi-blog-archive/sba-showroom/internal/showroom"
 	"github.com/spf13/cobra"
 )
 

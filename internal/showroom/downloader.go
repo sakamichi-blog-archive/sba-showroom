@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sakamichi-blog-archive/sba-showroom-downloader/internal/runner"
+	"github.com/sakamichi-blog-archive/sba-showroom/internal/runner"
 )
 
 var roomURLRegex = regexp.MustCompile(`(?i)^https://www\.showroom-live\.com/(r/([-_0-9A-Za-z]+)|([-_0-9A-Za-z]+))$`)
