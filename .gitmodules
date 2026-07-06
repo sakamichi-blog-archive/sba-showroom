@@ -1,0 +1,3 @@
+[submodule "ref/stream"]
+	path = ref/stream
+	url = https://github.com/sakamichi-blog-archive/stream
