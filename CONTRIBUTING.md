@@ -1,5 +1,13 @@
 # Contributing
 
+## Branches
+
+Use the `features/NAME` format for branch names.
+
+## Commits
+
+Use [Conventional Commits](https://www.conventionalcommits.org/) without a scope. Example: `feat: add download command`, not `feat(cmd): add download command`.
+
 ## Setup
 
 Install [mise](https://mise.jdx.dev), then:
