@@ -1,0 +1,6 @@
+[settings]
+auto_install = false
+pin = true
+
+[tools]
+go = "1.26.4"
