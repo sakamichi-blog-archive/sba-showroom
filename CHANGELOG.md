@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.1](https://github.com/sakamichi-blog-archive/sba-showroom/compare/v0.1.0...v0.1.1) (2026-07-07)
+
+
+### Bug Fixes
+
+* Trigger publish on tag push instead of release published ([0aa5da6](https://github.com/sakamichi-blog-archive/sba-showroom/commit/0aa5da6492b49a133fd46849e7cf6cdc2253a833))
+
 ## [0.1.0](https://github.com/sakamichi-blog-archive/sba-showroom/compare/v0.0.1...v0.1.0) (2026-07-07)
 
 
