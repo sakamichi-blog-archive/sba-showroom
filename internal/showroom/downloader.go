@@ -176,8 +176,10 @@ func resolveHLSURL(roomID int) (string, error) {
 	}
 }
 
+var jst = time.FixedZone("JST", 9*60*60)
+
 func buildFileName(name string, unixTS int64) string {
-	date := time.Unix(unixTS, 0).Format("060102")
+	date := time.Unix(unixTS, 0).In(jst).Format("060102")
 	safe := sanitizeName(name)
 	return date + "-" + safe + "-" + randomHex(4)
 }
