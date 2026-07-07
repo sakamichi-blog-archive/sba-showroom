@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0](https://github.com/sakamichi-blog-archive/sba-showroom/compare/v0.1.1...v0.2.0) (2026-07-07)
+
+
+### Features
+
+* Hardcode JST for output filename date ([#7](https://github.com/sakamichi-blog-archive/sba-showroom/issues/7)) ([8eb340e](https://github.com/sakamichi-blog-archive/sba-showroom/commit/8eb340e7a7e621a5a41cd33fb42e90060fb2a32d))
+
 ## [0.1.1](https://github.com/sakamichi-blog-archive/sba-showroom/compare/v0.1.0...v0.1.1) (2026-07-07)
 
 
