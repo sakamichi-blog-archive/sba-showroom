@@ -65,14 +65,18 @@ func TestFileHasContent(t *testing.T) {
 
 	// empty file
 	empty := filepath.Join(dir, "empty.mp4")
-	os.WriteFile(empty, []byte{}, 0o644)
+	if err := os.WriteFile(empty, []byte{}, 0o644); err != nil {
+		t.Fatal(err)
+	}
 	if fileHasContent(empty) {
 		t.Error("expected false for empty file")
 	}
 
 	// file with content
 	full := filepath.Join(dir, "full.mp4")
-	os.WriteFile(full, []byte{0x00}, 0o644)
+	if err := os.WriteFile(full, []byte{0x00}, 0o644); err != nil {
+		t.Fatal(err)
+	}
 	if !fileHasContent(full) {
 		t.Error("expected true for file with content")
 	}
