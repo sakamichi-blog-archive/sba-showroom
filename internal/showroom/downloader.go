@@ -116,7 +116,6 @@ func waitForLive(room *roomAPI, roomURLKey string, expectedTS *int64) error {
 }
 
 func runDownloadLoop(opts DownloadOptions, room *roomAPI, roomURLKey string, expectedTS int64) error {
-	everSucceeded := false
 	for {
 		streamURL, err := resolveHLSURL(room.ID)
 		if err != nil {
@@ -137,12 +136,8 @@ func runDownloadLoop(opts DownloadOptions, room *roomAPI, roomURLKey string, exp
 
 		fmt.Printf("Finished:  %s\n", time.Now().Format("2006-01-02 15:04:05"))
 
-		if fileHasContent(outPath) {
-			everSucceeded = true
-		}
-
 		if !opts.Retry {
-			if everSucceeded {
+			if fileHasContent(outPath) {
 				return nil
 			}
 			return runErr
