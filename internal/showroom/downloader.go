@@ -136,6 +136,9 @@ func runDownloadLoop(opts DownloadOptions, room *roomAPI, roomURLKey string, exp
 
 		fmt.Printf("Finished:  %s\n", time.Now().Format("2006-01-02 15:04:05"))
 
+		// In retry mode the loop runs until killed, so exit code is not meaningful.
+		// In no-retry mode, exit 0 if the file has content even when ffmpeg errors
+		// (streams often terminate abruptly, causing a non-zero exit despite a valid recording).
 		if !opts.Retry {
 			if fileHasContent(outPath) {
 				return nil
