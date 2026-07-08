@@ -1,6 +1,6 @@
 # sba-showroom
 
-SHOWROOM livestream downloader. Downloads as soon as a stream starts, or immediately for recorded episodes.
+SHOWROOM livestream downloader. Downloads as soon as a stream starts.
 
 ## Requirements
 
@@ -68,7 +68,7 @@ sba-showroom download https://www.showroom-live.com/46_iwamotorenka --no-retry
 
 ## Output
 
-Files are named `YYMMDD-{room}-{4hex}.mp4`. For episodes, the file modification time is set to the stream's start time.
+Files are named `YYMMDD-{room}-{4hex}.mp4` (date in JST).
 
 ## License
 
