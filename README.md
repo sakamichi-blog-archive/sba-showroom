@@ -14,8 +14,6 @@ Download a pre-built binary from the [Releases](https://github.com/sakamichi-blo
 
 ### go install
 
-Requires Go 1.21+.
-
 ```sh
 go install github.com/sakamichi-blog-archive/sba-showroom@latest
 ```
