@@ -43,6 +43,8 @@ When provided, the downloader waits until the given time before polling aggressi
 
 ### Flags
 
+Flags must appear before the URL.
+
 | Flag | Default | Description |
 |------|---------|-------------|
 | `--no-retry` | `false` | Stop after stream ends (retry is on by default) |
