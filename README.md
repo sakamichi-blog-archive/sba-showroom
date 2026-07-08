@@ -1,6 +1,6 @@
 # sba-showroom
 
-SHOWROOM livestream downloader. Downloads as soon as a stream starts.
+[SHOWROOM](https://www.showroom-live.com) livestream downloader. Downloads as soon as a stream starts.
 
 ## Requirements
 
