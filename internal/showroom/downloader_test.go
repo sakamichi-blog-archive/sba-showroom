@@ -63,6 +63,11 @@ func TestFileHasContent(t *testing.T) {
 		t.Error("expected false for missing file")
 	}
 
+	// directory at path
+	if fileHasContent(dir) {
+		t.Error("expected false for directory")
+	}
+
 	// empty file
 	empty := filepath.Join(dir, "empty.mp4")
 	if err := os.WriteFile(empty, []byte{}, 0o644); err != nil {

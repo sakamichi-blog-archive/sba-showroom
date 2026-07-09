@@ -160,7 +160,7 @@ func runDownloadLoop(opts DownloadOptions, room *roomAPI, roomURLKey string, exp
 
 func fileHasContent(path string) bool {
 	fi, err := os.Stat(path)
-	return err == nil && fi.Size() > 0
+	return err == nil && fi.Mode().IsRegular() && fi.Size() > 0
 }
 
 func resolveHLSURL(roomID int) (string, error) {
