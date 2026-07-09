@@ -1,6 +1,7 @@
 package showroom
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -52,6 +53,40 @@ func TestBuildFileName_Uniqueness(t *testing.T) {
 	b := buildFileName("room", ts)
 	if a == b {
 		t.Errorf("expected unique file names, got identical: %q", a)
+	}
+}
+
+func TestNoRetryOutcome(t *testing.T) {
+	dir := t.TempDir()
+	ffmpegErr := fmt.Errorf("ffmpeg exited with code 1")
+
+	emptyFile := filepath.Join(dir, "empty.mp4")
+	if err := os.WriteFile(emptyFile, []byte{}, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	fullFile := filepath.Join(dir, "full.mp4")
+	if err := os.WriteFile(fullFile, []byte{0x00}, 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	tests := []struct {
+		name    string
+		runErr  error
+		outPath string
+		wantErr bool
+	}{
+		{"ffmpeg error, file has content → exit 0", ffmpegErr, fullFile, false},
+		{"ffmpeg error, no file → propagate error", ffmpegErr, filepath.Join(dir, "missing.mp4"), true},
+		{"ffmpeg error, empty file → propagate error", ffmpegErr, emptyFile, true},
+		{"ffmpeg success, file has content → exit 0", nil, fullFile, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := noRetryOutcome(tt.runErr, tt.outPath)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("noRetryOutcome() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
 	}
 }
 
