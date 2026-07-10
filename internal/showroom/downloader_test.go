@@ -75,12 +75,12 @@ func TestNoRetryOutcome(t *testing.T) {
 		outPath string
 		wantErr bool
 	}{
-		{"ffmpeg error, file has content → exit 0", ffmpegErr, fullFile, false},
-		{"ffmpeg error, no file → propagate error", ffmpegErr, filepath.Join(dir, "missing.mp4"), true},
-		{"ffmpeg error, empty file → propagate error", ffmpegErr, emptyFile, true},
-		{"ffmpeg success, file has content → exit 0", nil, fullFile, false},
-		{"ffmpeg success, no file → error", nil, filepath.Join(dir, "missing.mp4"), true},
-		{"ffmpeg success, empty file → error", nil, emptyFile, true},
+		{"error/has_content", ffmpegErr, fullFile, false},
+		{"error/missing", ffmpegErr, filepath.Join(dir, "missing.mp4"), true},
+		{"error/empty", ffmpegErr, emptyFile, true},
+		{"success/has_content", nil, fullFile, false},
+		{"success/missing", nil, filepath.Join(dir, "missing.mp4"), true},
+		{"success/empty", nil, emptyFile, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

@@ -159,6 +159,9 @@ func runDownloadLoop(opts DownloadOptions, room *roomAPI, roomURLKey string, exp
 // regardless of ffmpeg's exit code.
 func noRetryOutcome(runErr error, outPath string) error {
 	if fileHasContent(outPath) {
+		if runErr != nil {
+			fmt.Printf("Warning: %s\n", runErr)
+		}
 		return nil
 	}
 	if runErr != nil {
