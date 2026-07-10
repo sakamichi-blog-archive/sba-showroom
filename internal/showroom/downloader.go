@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"net/url"
+	"os"
 	"regexp"
 	"strings"
 	"time"
@@ -135,8 +136,9 @@ func runDownloadLoop(opts DownloadOptions, room *roomAPI, roomURLKey string, exp
 
 		fmt.Printf("Finished:  %s\n", time.Now().Format("2006-01-02 15:04:05"))
 
+		// In retry mode the loop runs until killed, so exit code is not meaningful.
 		if !opts.Retry {
-			return runErr
+			return noRetryOutcome(runErr, outPath)
 		}
 		if runErr != nil {
 			fmt.Printf("Error: %s — retrying...\n", runErr)
@@ -149,6 +151,28 @@ func runDownloadLoop(opts DownloadOptions, room *roomAPI, roomURLKey string, exp
 			room = updated
 		}
 	}
+}
+
+// noRetryOutcome returns nil (exit 0) if the output file has content, even when
+// ffmpeg errors — streams often terminate abruptly with a non-zero exit despite
+// producing a valid recording. Returns an error when no content was written,
+// regardless of ffmpeg's exit code.
+func noRetryOutcome(runErr error, outPath string) error {
+	if fileHasContent(outPath) {
+		if runErr != nil {
+			fmt.Printf("Warning: %s\n", runErr)
+		}
+		return nil
+	}
+	if runErr != nil {
+		return runErr
+	}
+	return fmt.Errorf("ffmpeg exited successfully but no output was written to %s", outPath)
+}
+
+func fileHasContent(path string) bool {
+	fi, err := os.Stat(path)
+	return err == nil && fi.Mode().IsRegular() && fi.Size() > 0
 }
 
 func resolveHLSURL(roomID int) (string, error) {

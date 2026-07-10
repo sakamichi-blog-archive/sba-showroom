@@ -1,6 +1,9 @@
 package showroom
 
 import (
+	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -50,6 +53,74 @@ func TestBuildFileName_Uniqueness(t *testing.T) {
 	b := buildFileName("room", ts)
 	if a == b {
 		t.Errorf("expected unique file names, got identical: %q", a)
+	}
+}
+
+func TestNoRetryOutcome(t *testing.T) {
+	dir := t.TempDir()
+	ffmpegErr := fmt.Errorf("ffmpeg exited with code 1")
+
+	emptyFile := filepath.Join(dir, "empty.mp4")
+	if err := os.WriteFile(emptyFile, []byte{}, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	fullFile := filepath.Join(dir, "full.mp4")
+	if err := os.WriteFile(fullFile, []byte{0x00}, 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	tests := []struct {
+		name    string
+		runErr  error
+		outPath string
+		wantErr bool
+	}{
+		{"error/has_content", ffmpegErr, fullFile, false},
+		{"error/missing", ffmpegErr, filepath.Join(dir, "missing.mp4"), true},
+		{"error/empty", ffmpegErr, emptyFile, true},
+		{"success/has_content", nil, fullFile, false},
+		{"success/missing", nil, filepath.Join(dir, "missing.mp4"), true},
+		{"success/empty", nil, emptyFile, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := noRetryOutcome(tt.runErr, tt.outPath)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("noRetryOutcome() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestFileHasContent(t *testing.T) {
+	dir := t.TempDir()
+
+	// missing file
+	if fileHasContent(filepath.Join(dir, "missing.mp4")) {
+		t.Error("expected false for missing file")
+	}
+
+	// directory at path
+	if fileHasContent(dir) {
+		t.Error("expected false for directory")
+	}
+
+	// empty file
+	empty := filepath.Join(dir, "empty.mp4")
+	if err := os.WriteFile(empty, []byte{}, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if fileHasContent(empty) {
+		t.Error("expected false for empty file")
+	}
+
+	// file with content
+	full := filepath.Join(dir, "full.mp4")
+	if err := os.WriteFile(full, []byte{0x00}, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if !fileHasContent(full) {
+		t.Error("expected true for file with content")
 	}
 }
 
