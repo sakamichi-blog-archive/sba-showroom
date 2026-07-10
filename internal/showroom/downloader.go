@@ -155,12 +155,16 @@ func runDownloadLoop(opts DownloadOptions, room *roomAPI, roomURLKey string, exp
 
 // noRetryOutcome returns nil (exit 0) if the output file has content, even when
 // ffmpeg errors — streams often terminate abruptly with a non-zero exit despite
-// producing a valid recording.
+// producing a valid recording. Returns an error when no content was written,
+// regardless of ffmpeg's exit code.
 func noRetryOutcome(runErr error, outPath string) error {
 	if fileHasContent(outPath) {
 		return nil
 	}
-	return runErr
+	if runErr != nil {
+		return runErr
+	}
+	return fmt.Errorf("ffmpeg exited successfully but no output was written to %s", outPath)
 }
 
 func fileHasContent(path string) bool {
