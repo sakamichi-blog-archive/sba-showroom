@@ -88,7 +88,7 @@ func waitForLive(room *roomAPI, roomURLKey string, expectedTS *int64) error {
 			remaining := time.Until(time.Unix(*expectedTS, 0))
 			switch {
 			case remaining > 4*time.Minute:
-				sleep = 30 * time.Second
+				sleep = 20 * time.Second
 			case remaining > 0:
 				sleep = 20 * time.Second
 			}

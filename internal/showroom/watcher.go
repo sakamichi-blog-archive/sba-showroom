@@ -192,7 +192,7 @@ func watchPollInterval(nextSchedule int64) time.Duration {
 	remaining := time.Until(time.Unix(nextSchedule, 0))
 	switch {
 	case remaining > 4*time.Minute:
-		return 30 * time.Second
+		return 20 * time.Second
 	case remaining > 0:
 		return 20 * time.Second
 	default:
