@@ -1,6 +1,7 @@
 package showroom
 
 import (
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -49,6 +50,26 @@ func TestFetchRoom_NonOK(t *testing.T) {
 	_, err := fetchRoom("nonexistent")
 	if err == nil {
 		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestFetchRoom_NonOK_IsHTTPStatusError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "not found", http.StatusNotFound)
+	}))
+	defer srv.Close()
+
+	old := cdnBaseURL
+	cdnBaseURL = srv.URL
+	defer func() { cdnBaseURL = old }()
+
+	_, err := fetchRoom("someroom")
+	var httpErr *httpStatusError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected httpStatusError, got %T: %v", err, err)
+	}
+	if httpErr.Code != http.StatusNotFound {
+		t.Errorf("Code: got %d, want %d", httpErr.Code, http.StatusNotFound)
 	}
 }
 
