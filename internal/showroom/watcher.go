@@ -60,12 +60,14 @@ func Watch(campaignSlugs []string) error {
 
 		if n == 0 {
 			fmt.Println("\nExiting.")
+			w.cancel()
 			os.Exit(0)
 		}
 
 		now := time.Now()
 		if !firstInterrupt.IsZero() && now.Sub(firstInterrupt) < 3*time.Second {
 			fmt.Printf("\nStopping %d download(s)...\n", n)
+			w.cancel()
 			w.stopAll()
 			w.waitForDownloads()
 			os.Exit(0)
