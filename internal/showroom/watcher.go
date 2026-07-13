@@ -2,6 +2,7 @@ package showroom
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/signal"
@@ -87,7 +88,10 @@ func (w *watcher) watchRoom(urlKey string) {
 
 	room, err := fetchRoom(urlKey)
 	if err != nil {
-		logf("error: %s", err)
+		var httpErr *httpStatusError
+		if !errors.As(err, &httpErr) {
+			logf("error: %s", err)
+		}
 		return
 	}
 	logf("%s", room.Name)

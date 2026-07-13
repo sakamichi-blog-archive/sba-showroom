@@ -15,6 +15,14 @@ var (
 	showroomBaseURL = "https://www.showroom-live.com"
 )
 
+type httpStatusError struct {
+	Code int
+}
+
+func (e *httpStatusError) Error() string {
+	return fmt.Sprintf("HTTP %d", e.Code)
+}
+
 type roomAPI struct {
 	ID               int    `json:"id"`
 	IsLive           bool   `json:"is_live"`
@@ -51,7 +59,7 @@ func getJSON(url, referer string, out interface{}) (*http.Response, error) {
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		return resp, fmt.Errorf("HTTP %d", resp.StatusCode)
+		return resp, &httpStatusError{Code: resp.StatusCode}
 	}
 	ct := resp.Header.Get("Content-Type")
 	if !strings.Contains(ct, "application/json") {
