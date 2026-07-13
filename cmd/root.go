@@ -14,6 +14,8 @@ func Execute() {
 	switch os.Args[1] {
 	case "download":
 		runDownload(os.Args[2:])
+	case "watch":
+		runWatch(os.Args[2:])
 	case "-h", "--help", "help":
 		printUsage()
 	default:
@@ -28,4 +30,5 @@ func printUsage() {
 	fmt.Println()
 	fmt.Println("Commands:")
 	fmt.Println("  download  Download a SHOWROOM livestream")
+	fmt.Println("  watch     Watch campaign rooms and download when live")
 }
