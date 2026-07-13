@@ -7,9 +7,9 @@ import (
 
 func TestWatchPollInterval(t *testing.T) {
 	tests := []struct {
-		name    string
-		offset  time.Duration // positive = future, negative = past
-		want    time.Duration
+		name   string
+		offset time.Duration // positive = future, negative = past
+		want   time.Duration
 	}{
 		{"no schedule", 0, 20 * time.Second},
 		{"future", 10 * time.Minute, 20 * time.Second},
