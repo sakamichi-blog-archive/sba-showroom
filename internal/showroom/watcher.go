@@ -37,7 +37,11 @@ func Watch(campaignSlugs []string) error {
 		}
 	}
 
-	fmt.Printf("Watching %d rooms\n", len(roomKeys))
+	if len(roomKeys) == 1 {
+		fmt.Printf("Watching %s...\n", roomKeys[0])
+	} else {
+		fmt.Printf("Watching %s and %d other rooms...\n", roomKeys[0], len(roomKeys)-1)
+	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	w := &watcher{
@@ -60,7 +64,7 @@ func Watch(campaignSlugs []string) error {
 		w.mu.Unlock()
 
 		if n == 0 {
-			fmt.Println("\nExiting.")
+			fmt.Println("\nNo downloads in progress. Exiting.")
 			w.cancel()
 			os.Exit(0)
 		}
@@ -90,11 +94,10 @@ func (w *watcher) watchRoom(urlKey string) {
 	if err != nil {
 		var httpErr *httpStatusError
 		if !errors.As(err, &httpErr) {
-			logf("error: %s", err)
+			logf("Error: %s", err)
 		}
 		return
 	}
-	logf("%s", room.Name)
 	urlKey = room.URLKey
 
 	var prevSchedule int64
@@ -115,7 +118,7 @@ func (w *watcher) watchRoom(urlKey string) {
 
 		updated, err := fetchRoom(urlKey)
 		if err != nil {
-			logf("error: %s", err)
+			logf("Error: %s", err)
 			select {
 			case <-w.ctx.Done():
 				return
@@ -140,7 +143,7 @@ func (w *watcher) runDownload(urlKey string, room *roomAPI) {
 
 	streamURL, err := resolveHLSURL(room.ID)
 	if err != nil {
-		fmt.Printf("[%s] error resolving stream: %s\n", urlKey, err)
+		fmt.Printf("[%s] Error resolving stream: %s\n", urlKey, err)
 		return
 	}
 
@@ -149,7 +152,7 @@ func (w *watcher) runDownload(urlKey string, room *roomAPI) {
 
 	proc, err := runner.StartFFmpeg(runner.FFmpegArgs{Input: streamURL}, outPath)
 	if err != nil {
-		fmt.Printf("[%s] error: %s\n", urlKey, err)
+		fmt.Printf("[%s] Error: %s\n", urlKey, err)
 		return
 	}
 
@@ -164,7 +167,7 @@ func (w *watcher) runDownload(urlKey string, room *roomAPI) {
 	w.mu.Unlock()
 
 	if runErr != nil {
-		fmt.Printf("[%s] ffmpeg: %s\n", urlKey, runErr)
+		fmt.Printf("[%s] FFmpeg: %s\n", urlKey, runErr)
 	}
 	fmt.Printf("[%s] Finished: %s\n", urlKey, outPath)
 }
