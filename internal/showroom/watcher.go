@@ -156,9 +156,8 @@ func (w *watcher) runDownload(urlKey string, room *roomAPI) {
 		return
 	}
 
-	streamURL, err := resolveHLSURL(room.ID)
+	streamURL, err := w.resolveHLS(urlKey, room.ID)
 	if err != nil {
-		fmt.Printf("[%s] Error resolving stream: %s\n", urlKey, err)
 		return
 	}
 
@@ -185,6 +184,49 @@ func (w *watcher) runDownload(urlKey string, room *roomAPI) {
 		fmt.Printf("[%s] FFmpeg: %s\n", urlKey, runErr)
 	}
 	fmt.Printf("[%s] Finished: %s\n", urlKey, outPath)
+}
+
+// resolveHLS finds the best HLS URL for the room, with a 60s timeout so the
+// watcher doesn't loop forever when a stream ends while the CDN still reports
+// is_live=true. Returns a non-nil error (silently) on timeout or shutdown.
+func (w *watcher) resolveHLS(urlKey string, roomID int) (string, error) {
+	ctx, cancel := context.WithTimeout(w.ctx, 60*time.Second)
+	defer cancel()
+
+	for {
+		if ctx.Err() != nil {
+			return "", ctx.Err()
+		}
+
+		api, err := fetchStreamingURLs(roomID)
+		if err != nil {
+			fmt.Printf("[%s] Error fetching streams: %s\n", urlKey, err)
+			select {
+			case <-ctx.Done():
+				return "", ctx.Err()
+			case <-time.After(4 * time.Second):
+			}
+			continue
+		}
+
+		var best *streamingURLItem
+		for i := range api.StreamingURLList {
+			item := &api.StreamingURLList[i]
+			if item.Type == "hls" && (best == nil || item.Quality > best.Quality) {
+				best = item
+			}
+		}
+		if best != nil {
+			return best.URL, nil
+		}
+
+		fmt.Printf("[%s] No HLS stream; retrying...\n", urlKey)
+		select {
+		case <-ctx.Done():
+			return "", ctx.Err()
+		case <-time.After(4 * time.Second):
+		}
+	}
 }
 
 func (w *watcher) stopAll() {
