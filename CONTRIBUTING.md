@@ -22,6 +22,7 @@ New code must be accompanied by tests. Run the test suite with:
 mise run test
 ```
 
+
 ## Setup
 
 Install [mise](https://mise.jdx.dev), then:
