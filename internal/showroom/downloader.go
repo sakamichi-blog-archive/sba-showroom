@@ -116,13 +116,21 @@ func waitForLive(ctx context.Context, room *roomAPI, roomURLKey string, expected
 		}
 
 		if sleep > 0 {
-			time.Sleep(sleep)
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case <-time.After(sleep):
+			}
 		}
 
 		updated, err := fetchRoom(ctx, roomURLKey)
 		if err != nil {
 			fmt.Printf("  Error: %s\n", err)
-			time.Sleep(20 * time.Second)
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case <-time.After(20 * time.Second):
+			}
 			continue
 		}
 		if updated.IsLive {

@@ -196,14 +196,14 @@ func (w *watcher) runDownload(urlKey string, room *roomAPI) {
 	}
 
 	w.mu.Lock()
-	if w.ctx.Err() != nil {
-		// Shutdown fired between StartFFmpeg and registration; stop the orphan.
-		w.mu.Unlock()
-		proc.Stop()
-		return
-	}
-	w.active[urlKey] = proc
+	cancelled := w.ctx.Err() != nil
+	w.active[urlKey] = proc // register before releasing so waitForDownloads tracks us
 	w.mu.Unlock()
+
+	if cancelled {
+		// Shutdown fired between StartFFmpeg and registration; stop immediately.
+		proc.Stop()
+	}
 
 	runErr := proc.Wait()
 
