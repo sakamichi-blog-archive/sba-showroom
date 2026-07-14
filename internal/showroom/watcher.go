@@ -41,7 +41,7 @@ func Watch(opts WatchOptions) error {
 	}
 
 	for _, slug := range opts.Campaigns {
-		keys, err := fetchCampaignRooms(slug)
+		keys, err := fetchCampaignRooms(context.Background(), slug)
 		if err != nil {
 			return fmt.Errorf("campaign %s: %w", slug, err)
 		}
@@ -89,6 +89,7 @@ func Watch(opts WatchOptions) error {
 
 		if n == 0 {
 			fmt.Println("\nNo downloads in progress. Exiting.")
+			signal.Stop(sigCh)
 			w.cancel()
 			os.Exit(0)
 		}
@@ -96,6 +97,7 @@ func Watch(opts WatchOptions) error {
 		now := time.Now()
 		if !firstInterrupt.IsZero() && now.Sub(firstInterrupt) < 3*time.Second {
 			fmt.Printf("\nStopping %d download(s)...\n", n)
+			signal.Stop(sigCh)
 			w.cancel()
 			w.stopAll()
 			w.waitForDownloads()
@@ -117,15 +119,13 @@ func (w *watcher) watchRoom(urlKey string) {
 	var room *roomAPI
 	for {
 		var err error
-		room, err = fetchRoom(urlKey)
+		room, err = fetchRoom(w.ctx, urlKey)
 		if err == nil {
 			break
 		}
 		var httpErr *httpStatusError
 		if errors.As(err, &httpErr) && httpErr.Code/100 == 4 {
-			if w.verbose {
-				logf("Excluded: HTTP %d", httpErr.Code)
-			}
+			fmt.Fprintf(os.Stderr, "[%s] Excluded: HTTP %d\n", urlKey, httpErr.Code)
 			return
 		}
 		logf("Error: %s; retrying...", err)
@@ -156,7 +156,7 @@ func (w *watcher) watchRoom(urlKey string) {
 		case <-time.After(d):
 		}
 
-		updated, err := fetchRoom(urlKey)
+		updated, err := fetchRoom(w.ctx, urlKey)
 		if err != nil {
 			logf("Error: %s", err)
 			select {
@@ -223,7 +223,7 @@ func (w *watcher) resolveHLS(urlKey string, roomID int) (string, error) {
 			return "", ctx.Err()
 		}
 
-		api, err := fetchStreamingURLs(roomID)
+		api, err := fetchStreamingURLs(ctx, roomID)
 		if err != nil {
 			fmt.Printf("[%s] Error fetching streams: %s\n", urlKey, err)
 			select {
@@ -234,14 +234,7 @@ func (w *watcher) resolveHLS(urlKey string, roomID int) (string, error) {
 			continue
 		}
 
-		var best *streamingURLItem
-		for i := range api.StreamingURLList {
-			item := &api.StreamingURLList[i]
-			if item.Type == "hls" && (best == nil || item.Quality > best.Quality) {
-				best = item
-			}
-		}
-		if best != nil {
+		if best := selectBestHLS(api.StreamingURLList); best != nil {
 			return best.URL, nil
 		}
 
@@ -267,7 +260,8 @@ func (w *watcher) stopAll() {
 }
 
 func (w *watcher) waitForDownloads() {
-	for {
+	deadline := time.Now().Add(10 * time.Second)
+	for time.Now().Before(deadline) {
 		w.mu.Lock()
 		n := len(w.active)
 		w.mu.Unlock()
@@ -275,6 +269,16 @@ func (w *watcher) waitForDownloads() {
 			return
 		}
 		time.Sleep(100 * time.Millisecond)
+	}
+	// Timeout: force-kill any remaining processes.
+	w.mu.Lock()
+	procs := make([]*runner.FFmpegProcess, 0, len(w.active))
+	for _, proc := range w.active {
+		procs = append(procs, proc)
+	}
+	w.mu.Unlock()
+	for _, proc := range procs {
+		proc.Kill()
 	}
 }
 

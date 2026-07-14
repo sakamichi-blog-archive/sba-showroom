@@ -1,6 +1,7 @@
 package showroom
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"sort"
@@ -18,7 +19,7 @@ func TestFetchCampaignRooms(t *testing.T) {
 	campaignRoomsURL["nogi"] = srv.URL
 	defer func() { campaignRoomsURL["nogi"] = old }()
 
-	rooms, err := fetchCampaignRooms("nogi")
+	rooms, err := fetchCampaignRooms(context.Background(), "nogi")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -33,8 +34,33 @@ func TestFetchCampaignRooms(t *testing.T) {
 	}
 }
 
+func TestFetchCampaignRooms_FiltersEmpty(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"groupA":["room_a1","","room_a2"]}`))
+	}))
+	defer srv.Close()
+
+	old := campaignRoomsURL["nogi"]
+	campaignRoomsURL["nogi"] = srv.URL
+	defer func() { campaignRoomsURL["nogi"] = old }()
+
+	rooms, err := fetchCampaignRooms(context.Background(), "nogi")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	for _, r := range rooms {
+		if r == "" {
+			t.Error("expected empty strings to be filtered out")
+		}
+	}
+	if len(rooms) != 2 {
+		t.Errorf("got %d rooms, want 2", len(rooms))
+	}
+}
+
 func TestFetchCampaignRooms_UnknownCampaign(t *testing.T) {
-	_, err := fetchCampaignRooms("unknown")
+	_, err := fetchCampaignRooms(context.Background(), "unknown")
 	if err == nil {
 		t.Fatal("expected error for unknown campaign slug")
 	}
@@ -50,7 +76,7 @@ func TestFetchCampaignRooms_NonOK(t *testing.T) {
 	campaignRoomsURL["nogi"] = srv.URL
 	defer func() { campaignRoomsURL["nogi"] = old }()
 
-	_, err := fetchCampaignRooms("nogi")
+	_, err := fetchCampaignRooms(context.Background(), "nogi")
 	if err == nil {
 		t.Fatal("expected error for non-200 response")
 	}

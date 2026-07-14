@@ -1,6 +1,7 @@
 package showroom
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
@@ -44,9 +45,10 @@ func Download(opts DownloadOptions) error {
 	if err != nil {
 		return fmt.Errorf("invalid URL: %w", err)
 	}
-	urlNoQuery := *u
-	urlNoQuery.RawQuery = ""
-	return downloadLive(opts, urlNoQuery.String())
+	u.RawQuery = ""
+	u.Fragment = ""
+	u.Path = strings.TrimRight(u.Path, "/")
+	return downloadLive(opts, u.String())
 }
 
 func downloadLive(opts DownloadOptions, urlNoQuery string) error {
@@ -59,8 +61,10 @@ func downloadLive(opts DownloadOptions, urlNoQuery string) error {
 		roomURLKey = matches[3]
 	}
 
+	ctx := context.Background()
+
 	fmt.Printf("Fetching room: %s\n", roomURLKey)
-	room, err := fetchRoom(roomURLKey)
+	room, err := fetchRoom(ctx, roomURLKey)
 	if err != nil {
 		return fmt.Errorf("fetch room: %w", err)
 	}
@@ -75,19 +79,19 @@ func downloadLive(opts DownloadOptions, urlNoQuery string) error {
 	}
 
 	if !room.IsLive {
-		if err := waitForLive(room, roomURLKey, &expectedTS); err != nil {
+		if err := waitForLive(ctx, room, roomURLKey, &expectedTS); err != nil {
 			return err
 		}
-		room, err = fetchRoom(roomURLKey)
+		room, err = fetchRoom(ctx, roomURLKey)
 		if err != nil {
 			return fmt.Errorf("re-fetch room: %w", err)
 		}
 	}
 
-	return runDownloadLoop(opts, room, roomURLKey, expectedTS)
+	return runDownloadLoop(ctx, opts, room, roomURLKey, expectedTS)
 }
 
-func waitForLive(room *roomAPI, roomURLKey string, expectedTS *int64) error {
+func waitForLive(ctx context.Context, room *roomAPI, roomURLKey string, expectedTS *int64) error {
 	if room.NextLiveSchedule != 0 {
 		*expectedTS = room.NextLiveSchedule
 		fmt.Printf("Status:    Scheduled\n")
@@ -107,20 +111,15 @@ func waitForLive(room *roomAPI, roomURLKey string, expectedTS *int64) error {
 			switch {
 			case remaining > 0:
 				sleep = 20 * time.Second
-			case -remaining < 5*time.Minute:
-				sleep = 4 * time.Second
-			case -remaining < 20*time.Minute:
-				sleep = 8 * time.Second
-			default:
-				sleep = 20 * time.Second
 			}
+			// remaining <= 0: sleep stays 0, poll immediately
 		}
 
 		if sleep > 0 {
 			time.Sleep(sleep)
 		}
 
-		updated, err := fetchRoom(roomURLKey)
+		updated, err := fetchRoom(ctx, roomURLKey)
 		if err != nil {
 			fmt.Printf("  Error: %s\n", err)
 			time.Sleep(20 * time.Second)
@@ -137,9 +136,9 @@ func waitForLive(room *roomAPI, roomURLKey string, expectedTS *int64) error {
 	}
 }
 
-func runDownloadLoop(opts DownloadOptions, room *roomAPI, roomURLKey string, expectedTS int64) error {
+func runDownloadLoop(ctx context.Context, opts DownloadOptions, room *roomAPI, roomURLKey string, expectedTS int64) error {
 	for {
-		streamURL, err := resolveHLSURL(room.ID)
+		streamURL, err := resolveHLSURL(ctx, room.ID)
 		if err != nil {
 			return err
 		}
@@ -168,7 +167,7 @@ func runDownloadLoop(opts DownloadOptions, room *roomAPI, roomURLKey string, exp
 			fmt.Printf("Retrying...\n")
 		}
 
-		updated, err := fetchRoom(roomURLKey)
+		updated, err := fetchRoom(ctx, roomURLKey)
 		if err == nil {
 			room = updated
 		}
@@ -197,23 +196,16 @@ func fileHasContent(path string) bool {
 	return err == nil && fi.Mode().IsRegular() && fi.Size() > 0
 }
 
-func resolveHLSURL(roomID int) (string, error) {
+func resolveHLSURL(ctx context.Context, roomID int) (string, error) {
 	for {
-		api, err := fetchStreamingURLs(roomID)
+		api, err := fetchStreamingURLs(ctx, roomID)
 		if err != nil {
 			fmt.Printf("  Error fetching streams: %s\n", err)
 			time.Sleep(4 * time.Second)
 			continue
 		}
 
-		var best *streamingURLItem
-		for i := range api.StreamingURLList {
-			item := &api.StreamingURLList[i]
-			if item.Type == "hls" && (best == nil || item.Quality > best.Quality) {
-				best = item
-			}
-		}
-		if best != nil {
+		if best := selectBestHLS(api.StreamingURLList); best != nil {
 			return best.URL, nil
 		}
 

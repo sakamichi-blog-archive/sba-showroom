@@ -153,39 +153,3 @@ func TestParseRoomURLKey(t *testing.T) {
 		})
 	}
 }
-
-func TestResolveHLSURL_PicksHighestQuality(t *testing.T) {
-	items := []streamingURLItem{
-		{Type: "hls", Quality: 10, URL: "https://example.com/low.m3u8"},
-		{Type: "hls", Quality: 100, URL: "https://example.com/high.m3u8"},
-		{Type: "hls", Quality: 50, URL: "https://example.com/mid.m3u8"},
-	}
-
-	var best *streamingURLItem
-	for i := range items {
-		item := &items[i]
-		if item.Type == "hls" && (best == nil || item.Quality > best.Quality) {
-			best = item
-		}
-	}
-
-	if best == nil || best.URL != "https://example.com/high.m3u8" {
-		t.Errorf("expected highest quality HLS URL, got %v", best)
-	}
-}
-
-func TestResolveHLSURL_NoHLS(t *testing.T) {
-	items := []streamingURLItem{}
-
-	var best *streamingURLItem
-	for i := range items {
-		item := &items[i]
-		if item.Type == "hls" && (best == nil || item.Quality > best.Quality) {
-			best = item
-		}
-	}
-
-	if best != nil {
-		t.Errorf("expected nil for empty list, got %v", best)
-	}
-}

@@ -1,6 +1,7 @@
 package showroom
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -16,19 +17,19 @@ var campaignRoomsURL = map[string]string{
 // fetchCampaignRooms returns all room URL keys for a campaign slug.
 // rooms.json groups rooms by generation under varying keys, so we collect all
 // string values regardless of key name.
-func fetchCampaignRooms(campaign string) ([]string, error) {
+func fetchCampaignRooms(ctx context.Context, campaign string) ([]string, error) {
 	url, ok := campaignRoomsURL[campaign]
 	if !ok {
 		return nil, fmt.Errorf("unknown campaign %q (valid: nogi, hinata, sakura)", campaign)
 	}
 
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Set("User-Agent", userAgent)
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -50,7 +51,11 @@ func fetchCampaignRooms(campaign string) ([]string, error) {
 
 	var rooms []string
 	for _, keys := range groups {
-		rooms = append(rooms, keys...)
+		for _, k := range keys {
+			if k != "" {
+				rooms = append(rooms, k)
+			}
+		}
 	}
 	return rooms, nil
 }

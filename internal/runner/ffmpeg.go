@@ -31,6 +31,11 @@ func (p *FFmpegProcess) Stop() {
 	}
 }
 
+// Kill sends SIGKILL to ffmpeg unconditionally.
+func (p *FFmpegProcess) Kill() {
+	_ = p.cmd.Process.Kill()
+}
+
 // StartFFmpeg starts ffmpeg and returns a handle immediately.
 func StartFFmpeg(args FFmpegArgs, outputPath string) (*FFmpegProcess, error) {
 	cmd := exec.Command("ffmpeg", buildCmdArgs(args, outputPath)...)

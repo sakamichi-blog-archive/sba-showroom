@@ -1,11 +1,13 @@
 package showroom
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"strings"
+	"time"
 )
 
 const userAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.181 Safari/537.36"
@@ -13,6 +15,7 @@ const userAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_1) AppleWebKit/5
 var (
 	cdnBaseURL      = "https://public-api.showroom-cdn.com"
 	showroomBaseURL = "https://www.showroom-live.com"
+	httpClient      = &http.Client{Timeout: 30 * time.Second}
 )
 
 type httpStatusError struct {
@@ -42,8 +45,8 @@ type streamingURLItem struct {
 	URL       string `json:"url"`
 }
 
-func getJSON(url, referer string, out interface{}) (*http.Response, error) {
-	req, err := http.NewRequest("GET", url, nil)
+func getJSON(ctx context.Context, url, referer string, out interface{}) (*http.Response, error) {
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -52,7 +55,7 @@ func getJSON(url, referer string, out interface{}) (*http.Response, error) {
 		req.Header.Set("Referer", referer)
 	}
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -73,18 +76,30 @@ func getJSON(url, referer string, out interface{}) (*http.Response, error) {
 	return resp, json.Unmarshal(body, out)
 }
 
-func fetchRoom(roomURLKey string) (*roomAPI, error) {
+func fetchRoom(ctx context.Context, roomURLKey string) (*roomAPI, error) {
 	var room roomAPI
-	_, err := getJSON(cdnBaseURL+"/room/"+roomURLKey, "", &room)
+	_, err := getJSON(ctx, cdnBaseURL+"/room/"+roomURLKey, "", &room)
 	return &room, err
 }
 
-func fetchStreamingURLs(roomID int) (*streamingURLAPI, error) {
+func fetchStreamingURLs(ctx context.Context, roomID int) (*streamingURLAPI, error) {
 	url := fmt.Sprintf(
 		showroomBaseURL+"/api/live/streaming_url?room_id=%d&ignore_low_stream=1",
 		roomID,
 	)
 	var api streamingURLAPI
-	_, err := getJSON(url, "", &api)
+	_, err := getJSON(ctx, url, "", &api)
 	return &api, err
+}
+
+// selectBestHLS returns the highest-quality HLS stream from the list, or nil if none exist.
+func selectBestHLS(items []streamingURLItem) *streamingURLItem {
+	var best *streamingURLItem
+	for i := range items {
+		item := &items[i]
+		if item.Type == "hls" && (best == nil || item.Quality > best.Quality) {
+			best = item
+		}
+	}
+	return best
 }
