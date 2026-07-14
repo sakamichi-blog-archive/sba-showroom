@@ -124,6 +124,33 @@ func TestFileHasContent(t *testing.T) {
 	}
 }
 
+func TestParseRoomURLKey(t *testing.T) {
+	tests := []struct {
+		in      string
+		want    string
+		wantErr bool
+	}{
+		{"https://www.showroom-live.com/46_shibatayuna", "46_shibatayuna", false},
+		{"https://www.showroom-live.com/r/46_shibatayuna", "46_shibatayuna", false},
+		{"https://www.showroom-live.com/46_shibatayuna?some=query", "46_shibatayuna", false},
+		{"https://www.showroom-live.com/r/46_shibatayuna?foo=bar", "46_shibatayuna", false},
+		{"https://www.showroom-live.com/", "", true},
+		{"https://example.com/46_shibatayuna", "", true},
+		{"not a url", "", true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.in, func(t *testing.T) {
+			got, err := parseRoomURLKey(tt.in)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("parseRoomURLKey(%q) error = %v, wantErr %v", tt.in, err, tt.wantErr)
+			}
+			if got != tt.want {
+				t.Errorf("parseRoomURLKey(%q) = %q, want %q", tt.in, got, tt.want)
+			}
+		})
+	}
+}
+
 func TestResolveHLSURL_PicksHighestQuality(t *testing.T) {
 	items := []streamingURLItem{
 		{Type: "hls", Quality: 10, URL: "https://example.com/low.m3u8"},
