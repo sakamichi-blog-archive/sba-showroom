@@ -21,6 +21,8 @@ func parseRoomURLKey(rawURL string) (string, error) {
 		return "", fmt.Errorf("invalid URL: %w", err)
 	}
 	u.RawQuery = ""
+	u.Fragment = ""
+	u.Path = strings.TrimRight(u.Path, "/")
 	matches := roomURLRegex.FindStringSubmatch(u.String())
 	if matches == nil {
 		return "", fmt.Errorf("URL does not match a supported SHOWROOM format")
