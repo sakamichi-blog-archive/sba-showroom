@@ -48,4 +48,6 @@ internal/
 |----------|---------|
 | `https://public-api.showroom-cdn.com/room/{key}` | Room info + live status |
 | `https://www.showroom-live.com/api/live/streaming_url?room_id={id}` | Live HLS stream URLs |
-| `https://campaign.showroom-live.com/{campaign}/data/rooms.json` | Campaign room URL keys |
+| `https://campaign.showroom-live.com/nogizaka46_sr/data/rooms.json` (nogi) | Campaign room URL keys |
+| `https://campaign.showroom-live.com/hinatazaka46_sr/data/rooms.json` (hinata) | |
+| `https://campaign.showroom-live.com/sakurazaka46_sr/data/rooms.json` (sakura) | | 
