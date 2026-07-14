@@ -198,10 +198,18 @@ func fileHasContent(path string) bool {
 
 func resolveHLSURL(ctx context.Context, roomID int) (string, error) {
 	for {
+		if ctx.Err() != nil {
+			return "", ctx.Err()
+		}
+
 		api, err := fetchStreamingURLs(ctx, roomID)
 		if err != nil {
 			fmt.Printf("  Error fetching streams: %s\n", err)
-			time.Sleep(4 * time.Second)
+			select {
+			case <-ctx.Done():
+				return "", ctx.Err()
+			case <-time.After(4 * time.Second):
+			}
 			continue
 		}
 
@@ -210,7 +218,11 @@ func resolveHLSURL(ctx context.Context, roomID int) (string, error) {
 		}
 
 		fmt.Println("  No HLS streams found; retrying...")
-		time.Sleep(4 * time.Second)
+		select {
+		case <-ctx.Done():
+			return "", ctx.Err()
+		case <-time.After(4 * time.Second):
+		}
 	}
 }
 

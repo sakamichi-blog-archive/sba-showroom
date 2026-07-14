@@ -79,7 +79,7 @@ At least one `--campaign` or room URL is required.
 | Flag | Default | Description |
 |------|---------|-------------|
 | `--campaign` | — | Campaign to watch (`nogi`, `hinata`, `sakura`); may be repeated |
-| `--verbose` | `false` | Log room names on startup and excluded rooms |
+| `--verbose` | `false` | Log room names on startup |
 
 **Examples**
 

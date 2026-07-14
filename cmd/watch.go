@@ -20,7 +20,7 @@ func runWatch(args []string) {
 	fs := flag.NewFlagSet("watch", flag.ExitOnError)
 	var campaigns campaignFlags
 	fs.Var(&campaigns, "campaign", "Campaign to watch (nogi|hinata|sakura); may be repeated")
-	verbose := fs.Bool("verbose", false, "Log room names on startup and excluded rooms")
+	verbose := fs.Bool("verbose", false, "Log room names on startup")
 	fs.Usage = func() {
 		fmt.Println("Usage: sba-showroom watch [--campaign <nogi|hinata|sakura>] [URL ...]")
 		fmt.Println()
