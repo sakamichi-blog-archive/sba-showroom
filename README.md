@@ -20,18 +20,22 @@ go install github.com/sakamichi-blog-archive/sba-showroom@latest
 
 ## Usage
 
+### `download`
+
+Download a single room, waiting for it to go live if it isn't already.
+
 ```
 sba-showroom download [flags] URL [EXPECTED_TIME]
 ```
 
-### URL formats
+**URL formats**
 
 ```
 https://www.showroom-live.com/ROOM_URL_KEY
 https://www.showroom-live.com/r/ROOM_URL_KEY
 ```
 
-### EXPECTED_TIME formats
+**EXPECTED_TIME formats**
 
 ```
 HH:mm
@@ -39,32 +43,65 @@ YYYY-MM-DD HH:mm
 YYYY/MM/DD HH:mm
 ```
 
-When provided, the downloader waits until the given time before polling aggressively for the stream to go live.
+When provided, the downloader polls aggressively as the scheduled time approaches.
 
-### Flags
-
-Flags must appear before the URL.
+**Flags** (must appear before the URL)
 
 | Flag | Default | Description |
 |------|---------|-------------|
 | `--no-retry` | `false` | Stop after stream ends (retry is on by default) |
 
-### Examples
+**Examples**
 
 ```sh
-# Download a livestream room
+# Download a room (retries on disconnect by default)
 sba-showroom download https://www.showroom-live.com/46_iwamotorenka
 
-# With r/ prefix
-sba-showroom download https://www.showroom-live.com/r/46_iwamotorenka
-
-# Wait for a scheduled stream (retries on disconnect by default)
+# Wait for a scheduled stream
 sba-showroom download https://www.showroom-live.com/46_iwamotorenka 17:30
 
 # Download once without retrying
-sba-showroom download https://www.showroom-live.com/46_iwamotorenka --no-retry
+sba-showroom download --no-retry https://www.showroom-live.com/46_iwamotorenka
+```
+
+### `watch`
+
+Monitor one or more campaign groups and/or individual rooms, automatically downloading any that go live. Multiple rooms are downloaded concurrently.
 
 ```
+sba-showroom watch [flags] [URL ...]
+```
+
+At least one `--campaign` or room URL is required.
+
+**Flags**
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--campaign` | — | Campaign to watch (`nogi`, `hinata`, `sakura`); may be repeated |
+| `--verbose` | `false` | Log room names on startup and excluded rooms |
+
+**Examples**
+
+```sh
+# Watch all Nogizaka46 rooms
+sba-showroom watch --campaign nogi
+
+# Watch multiple campaigns
+sba-showroom watch --campaign nogi --campaign hinata
+
+# Watch a campaign plus specific rooms not in it
+sba-showroom watch --campaign nogi https://www.showroom-live.com/r/someroom
+
+# Watch specific rooms only
+sba-showroom watch https://www.showroom-live.com/46_iwamotorenka https://www.showroom-live.com/46_shibatayuna
+```
+
+**Shutdown**
+
+- Ctrl+C with no active downloads exits immediately.
+- Ctrl+C with active downloads prints a warning and keeps recording.
+- A second Ctrl+C within 3 seconds stops all downloads gracefully and exits.
 
 ## Output
 
