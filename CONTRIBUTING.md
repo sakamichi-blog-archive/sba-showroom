@@ -13,7 +13,7 @@ Use [Conventional Commits](https://www.conventionalcommits.org/) without a scope
 New code must be accompanied by tests. Run the test suite with:
 
 ```sh
-go test ./...
+mise run test
 ```
 
 ## Setup
