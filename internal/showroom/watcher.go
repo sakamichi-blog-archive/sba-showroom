@@ -196,6 +196,12 @@ func (w *watcher) runDownload(urlKey string, room *roomAPI) {
 	}
 
 	w.mu.Lock()
+	if w.ctx.Err() != nil {
+		// Shutdown fired between StartFFmpeg and registration; stop the orphan.
+		w.mu.Unlock()
+		proc.Stop()
+		return
+	}
 	w.active[urlKey] = proc
 	w.mu.Unlock()
 
