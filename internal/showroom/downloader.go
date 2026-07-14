@@ -15,6 +15,22 @@ import (
 
 var roomURLRegex = regexp.MustCompile(`(?i)^https://www\.showroom-live\.com/(r/([-_0-9A-Za-z]+)|([-_0-9A-Za-z]+))$`)
 
+func parseRoomURLKey(rawURL string) (string, error) {
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return "", fmt.Errorf("invalid URL: %w", err)
+	}
+	u.RawQuery = ""
+	matches := roomURLRegex.FindStringSubmatch(u.String())
+	if matches == nil {
+		return "", fmt.Errorf("URL does not match a supported SHOWROOM format")
+	}
+	if matches[2] != "" {
+		return matches[2], nil
+	}
+	return matches[3], nil
+}
+
 type DownloadOptions struct {
 	URL          string
 	Retry        bool

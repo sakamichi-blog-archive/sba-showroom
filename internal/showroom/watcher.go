@@ -15,6 +15,7 @@ import (
 // WatchOptions configures the Watch command.
 type WatchOptions struct {
 	Campaigns []string
+	RoomURLs  []string // additional room URLs not covered by Campaigns
 	Verbose   bool
 }
 
@@ -31,17 +32,29 @@ type watcher struct {
 func Watch(opts WatchOptions) error {
 	seen := make(map[string]bool)
 	var roomKeys []string
+
+	add := func(key string) {
+		if !seen[key] {
+			seen[key] = true
+			roomKeys = append(roomKeys, key)
+		}
+	}
+
 	for _, slug := range opts.Campaigns {
 		keys, err := fetchCampaignRooms(slug)
 		if err != nil {
 			return fmt.Errorf("campaign %s: %w", slug, err)
 		}
 		for _, k := range keys {
-			if !seen[k] {
-				seen[k] = true
-				roomKeys = append(roomKeys, k)
-			}
+			add(k)
 		}
+	}
+	for _, rawURL := range opts.RoomURLs {
+		key, err := parseRoomURLKey(rawURL)
+		if err != nil {
+			return fmt.Errorf("room URL %q: %w", rawURL, err)
+		}
+		add(key)
 	}
 
 	if len(roomKeys) == 1 {
