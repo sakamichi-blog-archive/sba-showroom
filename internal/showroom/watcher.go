@@ -57,6 +57,9 @@ func Watch(opts WatchOptions) error {
 		add(key)
 	}
 
+	if len(roomKeys) == 0 {
+		return fmt.Errorf("no rooms to watch")
+	}
 	if len(roomKeys) == 1 {
 		fmt.Printf("Watching %s...\n", roomKeys[0])
 	} else {
@@ -244,8 +247,12 @@ func (w *watcher) resolveHLS(urlKey string, roomID int) (string, error) {
 
 func (w *watcher) stopAll() {
 	w.mu.Lock()
-	defer w.mu.Unlock()
+	procs := make([]*runner.FFmpegProcess, 0, len(w.active))
 	for _, proc := range w.active {
+		procs = append(procs, proc)
+	}
+	w.mu.Unlock()
+	for _, proc := range procs {
 		proc.Stop()
 	}
 }
