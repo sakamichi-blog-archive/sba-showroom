@@ -1,6 +1,8 @@
 package showroom
 
 import (
+	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -21,7 +23,7 @@ func TestFetchRoom(t *testing.T) {
 	cdnBaseURL = srv.URL
 	defer func() { cdnBaseURL = old }()
 
-	room, err := fetchRoom("46_iwamotorenka")
+	room, err := fetchRoom(context.Background(), "46_iwamotorenka")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -46,9 +48,29 @@ func TestFetchRoom_NonOK(t *testing.T) {
 	cdnBaseURL = srv.URL
 	defer func() { cdnBaseURL = old }()
 
-	_, err := fetchRoom("nonexistent")
+	_, err := fetchRoom(context.Background(), "nonexistent")
 	if err == nil {
 		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestFetchRoom_NonOK_IsHTTPStatusError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "not found", http.StatusNotFound)
+	}))
+	defer srv.Close()
+
+	old := cdnBaseURL
+	cdnBaseURL = srv.URL
+	defer func() { cdnBaseURL = old }()
+
+	_, err := fetchRoom(context.Background(), "someroom")
+	var httpErr *httpStatusError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected httpStatusError, got %T: %v", err, err)
+	}
+	if httpErr.Code != http.StatusNotFound {
+		t.Errorf("Code: got %d, want %d", httpErr.Code, http.StatusNotFound)
 	}
 }
 
@@ -63,7 +85,7 @@ func TestFetchRoom_WrongContentType(t *testing.T) {
 	cdnBaseURL = srv.URL
 	defer func() { cdnBaseURL = old }()
 
-	_, err := fetchRoom("someroom")
+	_, err := fetchRoom(context.Background(), "someroom")
 	if err == nil {
 		t.Fatal("expected error for wrong Content-Type, got nil")
 	}
@@ -85,11 +107,38 @@ func TestFetchStreamingURLs(t *testing.T) {
 	showroomBaseURL = srv.URL
 	defer func() { showroomBaseURL = old }()
 
-	api, err := fetchStreamingURLs(123)
+	api, err := fetchStreamingURLs(context.Background(), 123)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if len(api.StreamingURLList) != 2 {
 		t.Errorf("StreamingURLList length: got %d, want 2", len(api.StreamingURLList))
+	}
+}
+
+func TestSelectBestHLS(t *testing.T) {
+	items := []streamingURLItem{
+		{Type: "hls", Quality: 10, URL: "https://example.com/low.m3u8"},
+		{Type: "hls", Quality: 100, URL: "https://example.com/high.m3u8"},
+		{Type: "hls", Quality: 50, URL: "https://example.com/mid.m3u8"},
+	}
+	best := selectBestHLS(items)
+	if best == nil || best.URL != "https://example.com/high.m3u8" {
+		t.Errorf("expected highest quality HLS URL, got %v", best)
+	}
+}
+
+func TestSelectBestHLS_Empty(t *testing.T) {
+	if best := selectBestHLS(nil); best != nil {
+		t.Errorf("expected nil for empty list, got %v", best)
+	}
+}
+
+func TestSelectBestHLS_NoHLS(t *testing.T) {
+	items := []streamingURLItem{
+		{Type: "rtmp", Quality: 100, URL: "rtmp://example.com/live"},
+	}
+	if best := selectBestHLS(items); best != nil {
+		t.Errorf("expected nil when no HLS items, got %v", best)
 	}
 }

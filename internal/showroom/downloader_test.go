@@ -124,38 +124,32 @@ func TestFileHasContent(t *testing.T) {
 	}
 }
 
-func TestResolveHLSURL_PicksHighestQuality(t *testing.T) {
-	items := []streamingURLItem{
-		{Type: "hls", Quality: 10, URL: "https://example.com/low.m3u8"},
-		{Type: "hls", Quality: 100, URL: "https://example.com/high.m3u8"},
-		{Type: "hls", Quality: 50, URL: "https://example.com/mid.m3u8"},
+func TestParseRoomURLKey(t *testing.T) {
+	tests := []struct {
+		in      string
+		want    string
+		wantErr bool
+	}{
+		{"https://www.showroom-live.com/46_shibatayuna", "46_shibatayuna", false},
+		{"https://www.showroom-live.com/r/46_shibatayuna", "46_shibatayuna", false},
+		{"https://www.showroom-live.com/46_shibatayuna?some=query", "46_shibatayuna", false},
+		{"https://www.showroom-live.com/r/46_shibatayuna?foo=bar", "46_shibatayuna", false},
+		{"https://www.showroom-live.com/46_shibatayuna#section", "46_shibatayuna", false},
+		{"https://www.showroom-live.com/46_shibatayuna/", "46_shibatayuna", false},
+		{"https://www.showroom-live.com/r/46_shibatayuna/", "46_shibatayuna", false},
+		{"https://www.showroom-live.com/", "", true},
+		{"https://example.com/46_shibatayuna", "", true},
+		{"not a url", "", true},
 	}
-
-	var best *streamingURLItem
-	for i := range items {
-		item := &items[i]
-		if item.Type == "hls" && (best == nil || item.Quality > best.Quality) {
-			best = item
-		}
-	}
-
-	if best == nil || best.URL != "https://example.com/high.m3u8" {
-		t.Errorf("expected highest quality HLS URL, got %v", best)
-	}
-}
-
-func TestResolveHLSURL_NoHLS(t *testing.T) {
-	items := []streamingURLItem{}
-
-	var best *streamingURLItem
-	for i := range items {
-		item := &items[i]
-		if item.Type == "hls" && (best == nil || item.Quality > best.Quality) {
-			best = item
-		}
-	}
-
-	if best != nil {
-		t.Errorf("expected nil for empty list, got %v", best)
+	for _, tt := range tests {
+		t.Run(tt.in, func(t *testing.T) {
+			got, err := parseRoomURLKey(tt.in)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("parseRoomURLKey(%q) error = %v, wantErr %v", tt.in, err, tt.wantErr)
+			}
+			if got != tt.want {
+				t.Errorf("parseRoomURLKey(%q) = %q, want %q", tt.in, got, tt.want)
+			}
+		})
 	}
 }

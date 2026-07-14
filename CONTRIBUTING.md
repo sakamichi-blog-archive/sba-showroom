@@ -10,6 +10,19 @@ Use [Conventional Commits](https://www.conventionalcommits.org/) without a scope
 
 Use `deps` as the commit type for dependency updates (e.g. `deps: bump golang.org/x/net`).
 
+## Documentation
+
+README usage docs must be kept up to date when commands or flags change.
+
+## Tests
+
+New code must be accompanied by tests. Run the test suite with:
+
+```sh
+mise run test
+```
+
+
 ## Setup
 
 Install [mise](https://mise.jdx.dev), then:
