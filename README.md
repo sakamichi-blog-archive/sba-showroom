@@ -43,7 +43,7 @@ YYYY-MM-DD HH:mm
 YYYY/MM/DD HH:mm
 ```
 
-When provided, the downloader polls aggressively as the scheduled time approaches.
+When provided, the downloader polls every 20 s until the scheduled time, then immediately until the stream goes live.
 
 **Flags** (must appear before the URL)
 
