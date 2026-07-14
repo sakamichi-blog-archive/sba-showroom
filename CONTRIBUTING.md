@@ -8,6 +8,8 @@ Use the `features/NAME` format for branch names.
 
 Use [Conventional Commits](https://www.conventionalcommits.org/) without a scope. Example: `feat: add download command`, not `feat(cmd): add download command`.
 
+Use `deps` as the commit type for dependency updates (e.g. `deps: bump golang.org/x/net`).
+
 ## Documentation
 
 README usage docs must be kept up to date when commands or flags change.

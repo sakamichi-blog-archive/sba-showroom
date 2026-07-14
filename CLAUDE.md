@@ -4,6 +4,10 @@
 
 Go implementation of a SHOWROOM livestream downloader. Supports live rooms (RTMP/HLS) and recorded episodes. Spiritual successor to the private/deprecated TypeScript `sba-stream` project, scoped to SHOWROOM only.
 
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for branch naming, commit conventions, and release process.
+
 ## Build & test
 
 ```sh
