@@ -23,9 +23,12 @@ func (p *FFmpegProcess) Wait() error {
 	return <-p.done
 }
 
-// Stop sends SIGINT to ffmpeg to request a graceful stop.
+// Stop sends SIGINT to ffmpeg to request a graceful stop. If the signal
+// cannot be delivered, it falls back to Kill.
 func (p *FFmpegProcess) Stop() {
-	_ = p.cmd.Process.Signal(os.Interrupt)
+	if err := p.cmd.Process.Signal(os.Interrupt); err != nil {
+		_ = p.cmd.Process.Kill()
+	}
 }
 
 // StartFFmpeg starts ffmpeg and returns a handle immediately.
