@@ -8,6 +8,10 @@ Use the `features/NAME` format for branch names.
 
 Use [Conventional Commits](https://www.conventionalcommits.org/) without a scope. Example: `feat: add download command`, not `feat(cmd): add download command`.
 
+## Documentation
+
+README usage docs must be kept up to date when commands or flags change.
+
 ## Tests
 
 New code must be accompanied by tests. Run the test suite with:
