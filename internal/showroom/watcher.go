@@ -114,17 +114,26 @@ func (w *watcher) watchRoom(urlKey string) {
 		fmt.Printf("[%s] "+format+"\n", append([]any{urlKey}, args...)...)
 	}
 
-	room, err := fetchRoom(urlKey)
-	if err != nil {
+	var room *roomAPI
+	for {
+		var err error
+		room, err = fetchRoom(urlKey)
+		if err == nil {
+			break
+		}
 		var httpErr *httpStatusError
-		if errors.As(err, &httpErr) {
+		if errors.As(err, &httpErr) && httpErr.Code/100 == 4 {
 			if w.verbose {
 				logf("Excluded: HTTP %d", httpErr.Code)
 			}
-		} else {
-			logf("Error: %s", err)
+			return
 		}
-		return
+		logf("Error: %s; retrying...", err)
+		select {
+		case <-w.ctx.Done():
+			return
+		case <-time.After(20 * time.Second):
+		}
 	}
 	urlKey = room.URLKey
 	if w.verbose {
