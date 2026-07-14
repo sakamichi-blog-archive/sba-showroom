@@ -20,6 +20,7 @@ func runWatch(args []string) {
 	fs := flag.NewFlagSet("watch", flag.ExitOnError)
 	var campaigns campaignFlags
 	fs.Var(&campaigns, "campaign", "Campaign to watch (nogi|hinata|sakura); may be repeated")
+	verbose := fs.Bool("verbose", false, "Log room names on startup and excluded rooms")
 	fs.Usage = func() {
 		fmt.Println("Usage: sba-showroom watch --campaign <nogi|hinata|sakura> [--campaign ...]")
 		fmt.Println()
@@ -42,7 +43,7 @@ func runWatch(args []string) {
 		}
 	}
 
-	if err := showroom.Watch(unique); err != nil {
+	if err := showroom.Watch(showroom.WatchOptions{Campaigns: unique, Verbose: *verbose}); err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
 	}

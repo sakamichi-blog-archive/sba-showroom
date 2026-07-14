@@ -12,19 +12,26 @@ import (
 	"github.com/sakamichi-blog-archive/sba-showroom/internal/runner"
 )
 
+// WatchOptions configures the Watch command.
+type WatchOptions struct {
+	Campaigns []string
+	Verbose   bool
+}
+
 type watcher struct {
-	ctx    context.Context
-	cancel context.CancelFunc
-	mu     sync.Mutex
-	active map[string]*runner.FFmpegProcess // urlKey → in-progress download
+	ctx     context.Context
+	cancel  context.CancelFunc
+	verbose bool
+	mu      sync.Mutex
+	active  map[string]*runner.FFmpegProcess // urlKey → in-progress download
 }
 
 // Watch fetches rooms for each campaign slug and monitors them for live streams,
 // starting concurrent downloads as rooms go live.
-func Watch(campaignSlugs []string) error {
+func Watch(opts WatchOptions) error {
 	seen := make(map[string]bool)
 	var roomKeys []string
-	for _, slug := range campaignSlugs {
+	for _, slug := range opts.Campaigns {
 		keys, err := fetchCampaignRooms(slug)
 		if err != nil {
 			return fmt.Errorf("campaign %s: %w", slug, err)
@@ -45,9 +52,10 @@ func Watch(campaignSlugs []string) error {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	w := &watcher{
-		ctx:    ctx,
-		cancel: cancel,
-		active: make(map[string]*runner.FFmpegProcess),
+		ctx:     ctx,
+		cancel:  cancel,
+		verbose: opts.Verbose,
+		active:  make(map[string]*runner.FFmpegProcess),
 	}
 
 	for _, key := range roomKeys {
@@ -93,12 +101,19 @@ func (w *watcher) watchRoom(urlKey string) {
 	room, err := fetchRoom(urlKey)
 	if err != nil {
 		var httpErr *httpStatusError
-		if !errors.As(err, &httpErr) {
+		if errors.As(err, &httpErr) {
+			if w.verbose {
+				logf("Excluded: HTTP %d", httpErr.Code)
+			}
+		} else {
 			logf("Error: %s", err)
 		}
 		return
 	}
 	urlKey = room.URLKey
+	if w.verbose {
+		logf("%s", room.Name)
+	}
 
 	var prevSchedule int64
 	for {
