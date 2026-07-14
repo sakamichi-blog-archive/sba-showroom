@@ -7,8 +7,9 @@ import (
 )
 
 type FFmpegArgs struct {
-	Input   string
-	Headers map[string]string
+	Input    string
+	Headers  map[string]string
+	Detached bool // run in own process group so terminal Ctrl+C doesn't reach ffmpeg
 }
 
 // FFmpegProcess is a running ffmpeg process.
@@ -32,7 +33,12 @@ func StartFFmpeg(args FFmpegArgs, outputPath string) (*FFmpegProcess, error) {
 	cmd := exec.Command("ffmpeg", buildCmdArgs(args, outputPath)...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	cmd.Stdin = os.Stdin
+	if args.Detached {
+		cmd.Stdin = nil
+		detachProcess(cmd)
+	} else {
+		cmd.Stdin = os.Stdin
+	}
 
 	if err := cmd.Start(); err != nil {
 		return nil, err

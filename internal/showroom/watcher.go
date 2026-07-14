@@ -165,7 +165,7 @@ func (w *watcher) runDownload(urlKey string, room *roomAPI) {
 	outPath := buildFileName(urlKey, time.Now().Unix()) + ".mp4"
 	fmt.Printf("[%s] Recording: %s\n", urlKey, outPath)
 
-	proc, err := runner.StartFFmpeg(runner.FFmpegArgs{Input: streamURL}, outPath)
+	proc, err := runner.StartFFmpeg(runner.FFmpegArgs{Input: streamURL, Detached: true}, outPath)
 	if err != nil {
 		fmt.Printf("[%s] Error: %s\n", urlKey, err)
 		return
