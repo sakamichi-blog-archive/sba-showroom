@@ -1,7 +1,10 @@
 package showroom
 
 import (
+	"context"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
@@ -121,6 +124,96 @@ func TestFileHasContent(t *testing.T) {
 	}
 	if !fileHasContent(full) {
 		t.Error("expected true for file with content")
+	}
+}
+
+func TestWaitForLive_SchedulePassthrough(t *testing.T) {
+	// When the scheduled time has already passed, waitForLive must return
+	// immediately without calling fetchRoom — matching sba-stream Phase 1→2.
+	called := false
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		called = true
+		http.Error(w, "fetchRoom must not be called", http.StatusInternalServerError)
+	}))
+	defer srv.Close()
+
+	old := cdnBaseURL
+	cdnBaseURL = srv.URL
+	defer func() { cdnBaseURL = old }()
+
+	pastTS := time.Now().Add(-5 * time.Minute).Unix()
+	room := &roomAPI{ID: 1, URLKey: "testroom"}
+	if err := waitForLive(context.Background(), room, "testroom", &pastTS); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if called {
+		t.Error("fetchRoom was called; expected immediate return when schedule has passed")
+	}
+}
+
+func TestWaitForLive_SchedulePassthrough_Immediate(t *testing.T) {
+	// Verify the passthrough returns fast (not blocking on a 20s sleep).
+	old := cdnBaseURL
+	cdnBaseURL = "http://127.0.0.1:0" // unreachable; test must not reach HTTP
+	defer func() { cdnBaseURL = old }()
+
+	pastTS := time.Now().Add(-1 * time.Second).Unix()
+	room := &roomAPI{ID: 1, URLKey: "testroom"}
+
+	start := time.Now()
+	_ = waitForLive(context.Background(), room, "testroom", &pastTS)
+	if elapsed := time.Since(start); elapsed > time.Second {
+		t.Errorf("passthrough took %v; expected near-instant return", elapsed)
+	}
+}
+
+func TestWaitForLive_ContextCancelledDuringSleep(t *testing.T) {
+	// With no schedule, waitForLive sleeps 20 s before polling. A context that
+	// times out in 50 ms should unblock the sleep and return an error quickly.
+	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+	defer cancel()
+
+	var ts int64
+	room := &roomAPI{ID: 1, URLKey: "testroom"}
+
+	start := time.Now()
+	err := waitForLive(ctx, room, "testroom", &ts)
+	elapsed := time.Since(start)
+
+	if err == nil {
+		t.Error("expected context error, got nil")
+	}
+	if elapsed > time.Second {
+		t.Errorf("context cancellation took %v; expected under 1 s", elapsed)
+	}
+}
+
+func TestWaitForLive_RoomScheduleTriggersPassthrough(t *testing.T) {
+	// If room.NextLiveSchedule is already in the past when waitForLive is
+	// called, expectedTS is set from the room field and the passthrough fires
+	// on the first loop iteration without making any HTTP calls.
+	called := false
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		called = true
+		http.Error(w, "fetchRoom must not be called", http.StatusInternalServerError)
+	}))
+	defer srv.Close()
+
+	old := cdnBaseURL
+	cdnBaseURL = srv.URL
+	defer func() { cdnBaseURL = old }()
+
+	pastTS := time.Now().Add(-2 * time.Minute).Unix()
+	room := &roomAPI{ID: 1, URLKey: "testroom", NextLiveSchedule: pastTS}
+	var ts int64 // zero; will be overwritten by room.NextLiveSchedule
+	if err := waitForLive(context.Background(), room, "testroom", &ts); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if called {
+		t.Error("fetchRoom was called; expected immediate passthrough")
+	}
+	if ts != pastTS {
+		t.Errorf("expectedTS not updated from NextLiveSchedule: got %d, want %d", ts, pastTS)
 	}
 }
 
