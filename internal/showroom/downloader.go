@@ -115,7 +115,7 @@ func waitForLive(ctx context.Context, room *roomAPI, roomURLKey string, expected
 			if remaining <= 0 {
 				// Scheduled time has passed; skip is_live polling and go straight
 				// to stream URL polling, matching sba-stream Phase 1→2 transition.
-				return nil
+				return ctx.Err()
 			}
 			sleep = min(remaining, 20*time.Second)
 		}
