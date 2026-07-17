@@ -117,7 +117,7 @@ func waitForLive(ctx context.Context, room *roomAPI, roomURLKey string, expected
 				// to stream URL polling, matching sba-stream Phase 1→2 transition.
 				return nil
 			}
-			sleep = 20 * time.Second
+			sleep = min(remaining, 20*time.Second)
 		}
 
 		if sleep > 0 {
