@@ -82,10 +82,13 @@ func downloadLive(opts DownloadOptions, urlNoQuery string) error {
 		if err := waitForLive(ctx, room, roomURLKey, &expectedTS); err != nil {
 			return err
 		}
-		// Refresh room state; non-fatal so a schedule-passthrough path can
-		// proceed to stream URL polling even before is_live is set.
-		if updated, err := fetchRoom(ctx, roomURLKey); err == nil {
-			room = updated
+		// If waitForLive exited because the room went live, refresh to get the
+		// latest state. Skip re-fetch for schedule passthrough to avoid blocking
+		// the transition to stream URL polling.
+		if room.IsLive {
+			if updated, err := fetchRoom(ctx, roomURLKey); err == nil {
+				room = updated
+			}
 		}
 	}
 
