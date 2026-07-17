@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -130,9 +131,9 @@ func TestFileHasContent(t *testing.T) {
 func TestWaitForLive_SchedulePassthrough(t *testing.T) {
 	// When the scheduled time has already passed, waitForLive must return
 	// immediately without calling fetchRoom — matching sba-stream Phase 1→2.
-	called := false
+	var called atomic.Bool
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		called = true
+		called.Store(true)
 		http.Error(w, "fetchRoom must not be called", http.StatusInternalServerError)
 	}))
 	defer srv.Close()
@@ -146,7 +147,7 @@ func TestWaitForLive_SchedulePassthrough(t *testing.T) {
 	if err := waitForLive(context.Background(), room, "testroom", &pastTS); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if called {
+	if called.Load() {
 		t.Error("fetchRoom was called; expected immediate return when schedule has passed")
 	}
 }
@@ -161,7 +162,9 @@ func TestWaitForLive_SchedulePassthrough_Immediate(t *testing.T) {
 	room := &roomAPI{ID: 1, URLKey: "testroom"}
 
 	start := time.Now()
-	_ = waitForLive(context.Background(), room, "testroom", &pastTS)
+	if err := waitForLive(context.Background(), room, "testroom", &pastTS); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 	if elapsed := time.Since(start); elapsed > time.Second {
 		t.Errorf("passthrough took %v; expected near-instant return", elapsed)
 	}
@@ -192,9 +195,9 @@ func TestWaitForLive_RoomScheduleTriggersPassthrough(t *testing.T) {
 	// If room.NextLiveSchedule is already in the past when waitForLive is
 	// called, expectedTS is set from the room field and the passthrough fires
 	// on the first loop iteration without making any HTTP calls.
-	called := false
+	var called atomic.Bool
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		called = true
+		called.Store(true)
 		http.Error(w, "fetchRoom must not be called", http.StatusInternalServerError)
 	}))
 	defer srv.Close()
@@ -209,7 +212,7 @@ func TestWaitForLive_RoomScheduleTriggersPassthrough(t *testing.T) {
 	if err := waitForLive(context.Background(), room, "testroom", &ts); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if called {
+	if called.Load() {
 		t.Error("fetchRoom was called; expected immediate passthrough")
 	}
 	if ts != pastTS {
