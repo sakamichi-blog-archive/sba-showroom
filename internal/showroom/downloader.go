@@ -82,9 +82,10 @@ func downloadLive(opts DownloadOptions, urlNoQuery string) error {
 		if err := waitForLive(ctx, room, roomURLKey, &expectedTS); err != nil {
 			return err
 		}
-		room, err = fetchRoom(ctx, roomURLKey)
-		if err != nil {
-			return fmt.Errorf("re-fetch room: %w", err)
+		// Refresh room state; non-fatal so a schedule-passthrough path can
+		// proceed to stream URL polling even before is_live is set.
+		if updated, err := fetchRoom(ctx, roomURLKey); err == nil {
+			room = updated
 		}
 	}
 
@@ -108,11 +109,12 @@ func waitForLive(ctx context.Context, room *roomAPI, roomURLKey string, expected
 			sleep = 20 * time.Second
 		} else {
 			remaining := time.Until(time.Unix(*expectedTS, 0))
-			switch {
-			case remaining > 0:
-				sleep = 20 * time.Second
+			if remaining <= 0 {
+				// Scheduled time has passed; skip is_live polling and go straight
+				// to stream URL polling, matching sba-stream Phase 1→2 transition.
+				return nil
 			}
-			// remaining <= 0: sleep stays 0, poll immediately
+			sleep = 20 * time.Second
 		}
 
 		if sleep > 0 {
