@@ -84,8 +84,8 @@ func fetchRoom(ctx context.Context, roomURLKey string) (*roomAPI, error) {
 
 func fetchStreamingURLs(ctx context.Context, roomID int) (*streamingURLAPI, error) {
 	url := fmt.Sprintf(
-		showroomBaseURL+"/api/live/streaming_url?room_id=%d&ignore_low_stream=1",
-		roomID,
+		showroomBaseURL+"/api/live/streaming_url?room_id=%d&ignore_low_stream=1&_=%d",
+		roomID, time.Now().Unix(),
 	)
 	var api streamingURLAPI
 	_, err := getJSON(ctx, url, "", &api)
