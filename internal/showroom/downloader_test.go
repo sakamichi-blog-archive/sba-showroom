@@ -51,6 +51,22 @@ func TestBuildFileName(t *testing.T) {
 	}
 }
 
+func TestBuildFileName_UsesJST(t *testing.T) {
+	// 2024-03-15 00:00 UTC = 2024-03-15 09:00 JST — date must be 240315 in JST.
+	ts := time.Date(2024, 3, 15, 0, 0, 0, 0, time.UTC).Unix()
+	name := buildFileName("room", ts)
+	if !strings.HasPrefix(name, "240315-") {
+		t.Errorf("expected JST date prefix 240315, got %q", name)
+	}
+
+	// 2024-03-14 15:00 UTC = 2024-03-15 00:00 JST — still 240315 in JST.
+	ts2 := time.Date(2024, 3, 14, 15, 0, 0, 0, time.UTC).Unix()
+	name2 := buildFileName("room", ts2)
+	if !strings.HasPrefix(name2, "240315-") {
+		t.Errorf("expected JST date prefix 240315 for UTC previous day, got %q", name2)
+	}
+}
+
 func TestBuildFileName_Uniqueness(t *testing.T) {
 	ts := time.Now().Unix()
 	a := buildFileName("room", ts)

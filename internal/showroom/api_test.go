@@ -5,7 +5,10 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
+	"strconv"
 	"testing"
+	"time"
 )
 
 func TestFetchRoom(t *testing.T) {
@@ -92,7 +95,9 @@ func TestFetchRoom_WrongContentType(t *testing.T) {
 }
 
 func TestFetchStreamingURLs(t *testing.T) {
+	var gotQuery string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotQuery = r.URL.RawQuery
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{
 			"streaming_url_list": [
@@ -107,12 +112,32 @@ func TestFetchStreamingURLs(t *testing.T) {
 	showroomBaseURL = srv.URL
 	defer func() { showroomBaseURL = old }()
 
+	before := time.Now().Unix()
 	api, err := fetchStreamingURLs(context.Background(), 123)
+	after := time.Now().Unix()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if len(api.StreamingURLList) != 2 {
 		t.Errorf("StreamingURLList length: got %d, want 2", len(api.StreamingURLList))
+	}
+
+	q, err := url.ParseQuery(gotQuery)
+	if err != nil {
+		t.Fatalf("failed to parse query %q: %v", gotQuery, err)
+	}
+	if q.Get("room_id") != "123" {
+		t.Errorf("room_id: got %q, want %q", q.Get("room_id"), "123")
+	}
+	if q.Get("ignore_low_stream") != "1" {
+		t.Errorf("ignore_low_stream: got %q, want %q", q.Get("ignore_low_stream"), "1")
+	}
+	cacheBuster, err := strconv.ParseInt(q.Get("_"), 10, 64)
+	if err != nil {
+		t.Fatalf("cache-buster _ param missing or not an int: %q", q.Get("_"))
+	}
+	if cacheBuster < before || cacheBuster > after {
+		t.Errorf("cache-buster %d not in [%d, %d]", cacheBuster, before, after)
 	}
 }
 
