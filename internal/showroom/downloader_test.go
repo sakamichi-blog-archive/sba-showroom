@@ -191,6 +191,21 @@ func TestWaitForLive_ContextCancelledDuringSleep(t *testing.T) {
 	}
 }
 
+func TestWaitForLive_PassthroughPropagatesCancelledContext(t *testing.T) {
+	// When the scheduled time has passed AND the context is already cancelled,
+	// waitForLive must return the context error rather than nil so callers do
+	// not proceed into runDownloadLoop after shutdown.
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // cancel before calling
+
+	pastTS := time.Now().Add(-5 * time.Minute).Unix()
+	room := &roomAPI{ID: 1, URLKey: "testroom"}
+	err := waitForLive(ctx, room, "testroom", &pastTS)
+	if err == nil {
+		t.Error("expected context error when ctx is cancelled on passthrough, got nil")
+	}
+}
+
 func TestWaitForLive_RoomScheduleTriggersPassthrough(t *testing.T) {
 	// If room.NextLiveSchedule is already in the past when waitForLive is
 	// called, expectedTS is set from the room field and the passthrough fires
