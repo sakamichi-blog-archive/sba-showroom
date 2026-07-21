@@ -92,7 +92,7 @@ func downloadLive(opts DownloadOptions, urlNoQuery string) error {
 		}
 	}
 
-	return runDownloadLoop(ctx, opts, room, roomURLKey, expectedTS)
+	return runDownloadLoop(ctx, opts, room, roomURLKey)
 }
 
 func waitForLive(ctx context.Context, room *roomAPI, roomURLKey string, expectedTS *int64) error {
@@ -149,18 +149,14 @@ func waitForLive(ctx context.Context, room *roomAPI, roomURLKey string, expected
 	}
 }
 
-func runDownloadLoop(ctx context.Context, opts DownloadOptions, room *roomAPI, roomURLKey string, expectedTS int64) error {
+func runDownloadLoop(ctx context.Context, opts DownloadOptions, room *roomAPI, roomURLKey string) error {
 	for {
 		streamURL, err := resolveHLSURL(ctx, room.ID)
 		if err != nil {
 			return err
 		}
 
-		ts := expectedTS
-		if ts == 0 {
-			ts = time.Now().Unix()
-		}
-		outPath := buildFileName(roomURLKey, ts) + ".mp4"
+		outPath := buildFileName(roomURLKey, time.Now().Unix()) + ".mp4"
 
 		fmt.Printf("Status:    Live\n")
 		fmt.Printf("File:      %s\n", outPath)
