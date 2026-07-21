@@ -18,8 +18,6 @@ import (
 func TestWatchRoom_LogsScheduledImmediately(t *testing.T) {
 	// After the initial fetchRoom, if NextLiveSchedule is non-zero the watcher
 	// must log "Scheduled:" before sleeping for the first poll interval (20 s).
-	// Cancel after 300 ms — well before any sleep fires — and verify the log
-	// appeared in output.
 	futureTS := time.Now().Add(2 * time.Hour).Unix()
 	body := fmt.Sprintf(`{"id":1,"url_key":"testroom","next_live_schedule":%d}`, futureTS)
 
@@ -55,21 +53,43 @@ func TestWatchRoom_LogsScheduledImmediately(t *testing.T) {
 		w.watchRoom("testroom")
 	}()
 
-	time.Sleep(300 * time.Millisecond)
+	// Read from the pipe until "Scheduled:" appears rather than sleeping a
+	// fixed duration, so the test is not sensitive to goroutine scheduling.
+	logReceived := make(chan string, 1)
+	go func() {
+		var buf bytes.Buffer
+		tmp := make([]byte, 256)
+		for {
+			n, err := pr.Read(tmp)
+			buf.Write(tmp[:n])
+			if strings.Contains(buf.String(), "Scheduled:") {
+				logReceived <- buf.String()
+				return
+			}
+			if err != nil {
+				return
+			}
+		}
+	}()
+
+	timedOut := false
+	var output string
+	select {
+	case output = <-logReceived:
+	case <-time.After(2 * time.Second):
+		timedOut = true
+	}
 	cancel()
 	wg.Wait()
-
 	_ = pw.Close()
 	os.Stdout = origStdout
-
-	var buf bytes.Buffer
-	if _, err := buf.ReadFrom(pr); err != nil {
-		t.Fatal(err)
-	}
 	_ = pr.Close()
 
-	if !strings.Contains(buf.String(), "Scheduled:") {
-		t.Errorf("expected 'Scheduled:' in output before first poll interval; got: %q", buf.String())
+	if timedOut {
+		t.Fatal("'Scheduled:' not logged within 2 s of watchRoom start")
+	}
+	if !strings.Contains(output, "Scheduled:") {
+		t.Errorf("expected 'Scheduled:' in output; got: %q", output)
 	}
 }
 
