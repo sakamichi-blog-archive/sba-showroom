@@ -25,7 +25,7 @@ func TestWatchRoom_LogsScheduledImmediately(t *testing.T) {
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		fmt.Fprint(w, body)
+		_, _ = fmt.Fprint(w, body)
 	}))
 	defer srv.Close()
 
@@ -58,14 +58,14 @@ func TestWatchRoom_LogsScheduledImmediately(t *testing.T) {
 	cancel()
 	wg.Wait()
 
-	pw.Close()
+	_ = pw.Close()
 	os.Stdout = origStdout
 
 	var buf bytes.Buffer
 	if _, err := buf.ReadFrom(pr); err != nil {
 		t.Fatal(err)
 	}
-	pr.Close()
+	_ = pr.Close()
 
 	if !strings.Contains(buf.String(), "Scheduled:") {
 		t.Errorf("expected 'Scheduled:' in output before first poll interval; got: %q", buf.String())
