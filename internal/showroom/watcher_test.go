@@ -212,13 +212,17 @@ func TestWatchRoom_StreamURLsBeforeRoomAPIAtSchedule(t *testing.T) {
 		wt.watchRoom("testroom")
 	}()
 
+	timedOut := false
 	select {
 	case <-streamCalled:
 	case <-time.After(5 * time.Second):
-		t.Fatal("stream URL endpoint not called after schedule passed")
+		timedOut = true
 	}
 	cancel()
 	wg.Wait()
+	if timedOut {
+		t.Fatal("stream URL endpoint not called after schedule passed")
+	}
 
 	mu.Lock()
 	defer mu.Unlock()
