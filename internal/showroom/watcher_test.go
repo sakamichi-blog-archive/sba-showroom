@@ -97,3 +97,13 @@ func TestWatchPollInterval(t *testing.T) {
 		})
 	}
 }
+
+func TestWatchPollInterval_NearFuture(t *testing.T) {
+	// When the schedule is < 20 s away, the interval must be less than 20 s
+	// so the watcher wakes near the scheduled time rather than oversleeping.
+	ts := time.Now().Add(8 * time.Second).Unix()
+	got := watchPollInterval(ts)
+	if got >= 20*time.Second {
+		t.Errorf("expected interval < 20s for near-future schedule, got %v", got)
+	}
+}
