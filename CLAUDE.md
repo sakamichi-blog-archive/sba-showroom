@@ -42,6 +42,9 @@ internal/
 - File naming matches the original `sba-stream`: `YYMMDD-{name}-{4hex}.mp4` (date in JST).
 - `watch` starts ffmpeg with `Detached: true` so terminal Ctrl+C does not propagate to ffmpeg. `Stop()` sends SIGINT; falls back to `Kill()` if signal delivery fails.
 - `waitForLive` in `downloader.go` implements schedule passthrough: when `remaining <= 0` (scheduled time has passed), it returns `ctx.Err()` immediately without polling `is_live`, matching sba-stream's Phase 1→2 transition. Callers proceed straight to stream URL polling.
+- `watchRoom` in `watcher.go` logs `Scheduled:` immediately after the initial `fetchRoom` if `NextLiveSchedule` is set, before the first poll interval fires. The poll loop only re-logs when the schedule changes.
+- `watchPollInterval` uses `min(remaining, 20s)` when the schedule is in the future, so the watcher wakes at the scheduled time rather than oversleeping a full 20 s interval.
+- `watchRoom` implements the same Phase 1→2 passthrough as `waitForLive`: when `room.NextLiveSchedule` has passed and `is_live` is still false, it calls `runDownload` directly to poll stream URLs (60 s timeout) rather than waiting for `is_live=true`, which SHOWROOM sets ~1 minute after streams become available. Falls back to `is_live` polling if `resolveHLS` times out. Stream URL polling fires **before** the next `fetchRoom` call: there is a check immediately after the poll-interval sleep, so the priority order at the scheduled time is stream URLs → room API.
 
 ## APIs used
 

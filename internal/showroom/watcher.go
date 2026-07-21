@@ -141,12 +141,24 @@ func (w *watcher) watchRoom(urlKey string) {
 	}
 
 	var prevSchedule int64
+	if room.NextLiveSchedule != 0 {
+		prevSchedule = room.NextLiveSchedule
+		logf("Scheduled: %s", time.Unix(prevSchedule, 0).Format("2006-01-02 15:04:05"))
+	}
 	for {
 		if room.IsLive {
 			w.runDownload(urlKey, room)
 			room.IsLive = false
 			room.NextLiveSchedule = 0
 			prevSchedule = 0
+		} else if room.NextLiveSchedule != 0 && time.Until(time.Unix(room.NextLiveSchedule, 0)) <= 0 {
+			// Scheduled time has passed; poll stream URLs directly rather than
+			// waiting for is_live, matching sba-stream Phase 1→2 transition.
+			// resolveHLS has a 60 s timeout. After it returns (success or
+			// timeout), NextLiveSchedule is cleared and fetchRoom runs; if the
+			// API still reports a past schedule the passthrough re-fires then.
+			w.runDownload(urlKey, room)
+			room.NextLiveSchedule = 0
 		}
 
 		d := watchPollInterval(room.NextLiveSchedule)
@@ -154,6 +166,14 @@ func (w *watcher) watchRoom(urlKey string) {
 		case <-w.ctx.Done():
 			return
 		case <-time.After(d):
+		}
+
+		// Scheduled time passed during the sleep: poll stream URLs before
+		// fetchRoom (Phase 1→2 priority). NextLiveSchedule is cleared after
+		// runDownload; fetchRoom then re-evaluates the live/schedule state.
+		if room.NextLiveSchedule != 0 && time.Until(time.Unix(room.NextLiveSchedule, 0)) <= 0 {
+			w.runDownload(urlKey, room)
+			room.NextLiveSchedule = 0
 		}
 
 		updated, err := fetchRoom(w.ctx, urlKey)
@@ -295,7 +315,7 @@ func watchPollInterval(nextSchedule int64) time.Duration {
 	remaining := time.Until(time.Unix(nextSchedule, 0))
 	switch {
 	case remaining > 0:
-		return 20 * time.Second
+		return min(remaining, 20*time.Second)
 	case -remaining < 5*time.Minute:
 		return 4 * time.Second
 	case -remaining < 20*time.Minute:
