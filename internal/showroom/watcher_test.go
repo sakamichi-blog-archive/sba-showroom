@@ -164,3 +164,82 @@ func TestWatchRoom_SchedulePassthroughChecksStreamURLs(t *testing.T) {
 	cancel()
 	wg.Wait()
 }
+
+func TestWatchRoom_StreamURLsBeforeRoomAPIAtSchedule(t *testing.T) {
+	// When the schedule passes during the poll sleep, stream URLs must be
+	// checked before the next fetchRoom call (priority order: stream > room).
+	nearTS := time.Now().Add(time.Second).Unix() // always 0–1 s in the future
+
+	var mu sync.Mutex
+	var callOrder []string
+	streamCalled := make(chan struct{}, 1)
+
+	roomBody := fmt.Sprintf(`{"id":1,"url_key":"testroom","is_live":false,"next_live_schedule":%d}`, nearTS)
+
+	cdnSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		callOrder = append(callOrder, "room")
+		mu.Unlock()
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = fmt.Fprint(w, roomBody)
+	}))
+	defer cdnSrv.Close()
+
+	showroomSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		callOrder = append(callOrder, "stream")
+		mu.Unlock()
+		select {
+		case streamCalled <- struct{}{}:
+		default:
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = fmt.Fprint(w, `{"streaming_url_list":[]}`)
+	}))
+	defer showroomSrv.Close()
+
+	oldCDN, oldShowroom := cdnBaseURL, showroomBaseURL
+	cdnBaseURL, showroomBaseURL = cdnSrv.URL, showroomSrv.URL
+	defer func() { cdnBaseURL, showroomBaseURL = oldCDN, oldShowroom }()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	wt := &watcher{ctx: ctx, cancel: cancel, active: make(map[string]*runner.FFmpegProcess)}
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		wt.watchRoom("testroom")
+	}()
+
+	select {
+	case <-streamCalled:
+	case <-time.After(5 * time.Second):
+		t.Fatal("stream URL endpoint not called after schedule passed")
+	}
+	cancel()
+	wg.Wait()
+
+	mu.Lock()
+	defer mu.Unlock()
+
+	// stream must appear before the second room call in the order slice.
+	firstStream, secondRoom, roomCount := -1, -1, 0
+	for i, v := range callOrder {
+		if v == "room" {
+			roomCount++
+			if roomCount == 2 {
+				secondRoom = i
+			}
+		}
+		if v == "stream" && firstStream == -1 {
+			firstStream = i
+		}
+	}
+	if firstStream == -1 {
+		t.Fatalf("stream never called; order: %v", callOrder)
+	}
+	if secondRoom != -1 && firstStream > secondRoom {
+		t.Errorf("stream called after second fetchRoom; order: %v", callOrder)
+	}
+}
