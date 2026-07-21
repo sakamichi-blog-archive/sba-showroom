@@ -107,3 +107,59 @@ func TestWatchPollInterval_NearFuture(t *testing.T) {
 		t.Errorf("expected interval < 20s for near-future schedule, got %v", got)
 	}
 }
+
+func TestWatchRoom_SchedulePassthroughChecksStreamURLs(t *testing.T) {
+	// When NextLiveSchedule has passed and is_live=false, watchRoom must poll
+	// stream URLs directly (Phase 1→2) rather than waiting for is_live=true.
+	pastTS := time.Now().Add(-1 * time.Minute).Unix()
+	roomBody := fmt.Sprintf(`{"id":1,"url_key":"testroom","is_live":false,"next_live_schedule":%d}`, pastTS)
+
+	streamChecked := make(chan struct{}, 1)
+
+	cdnSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = fmt.Fprint(w, roomBody)
+	}))
+	defer cdnSrv.Close()
+
+	showroomSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		select {
+		case streamChecked <- struct{}{}:
+		default:
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = fmt.Fprint(w, `{"streaming_url_list":[]}`)
+	}))
+	defer showroomSrv.Close()
+
+	oldCDN := cdnBaseURL
+	oldShowroom := showroomBaseURL
+	cdnBaseURL = cdnSrv.URL
+	showroomBaseURL = showroomSrv.URL
+	defer func() {
+		cdnBaseURL = oldCDN
+		showroomBaseURL = oldShowroom
+	}()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	wt := &watcher{
+		ctx:    ctx,
+		cancel: cancel,
+		active: make(map[string]*runner.FFmpegProcess),
+	}
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		wt.watchRoom("testroom")
+	}()
+
+	select {
+	case <-streamChecked:
+	case <-time.After(2 * time.Second):
+		t.Error("stream URL endpoint not called; expected Phase 1→2 passthrough after scheduled time")
+	}
+	cancel()
+	wg.Wait()
+}
