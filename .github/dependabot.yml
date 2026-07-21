@@ -24,4 +24,4 @@ updates:
         patterns: ["*"]
         update-types: [minor, patch]
     commit-message:
-      prefix: deps
+      prefix: ci
