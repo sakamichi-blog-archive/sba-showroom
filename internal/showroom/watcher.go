@@ -151,13 +151,12 @@ func (w *watcher) watchRoom(urlKey string) {
 			room.IsLive = false
 			room.NextLiveSchedule = 0
 			prevSchedule = 0
-		} else if prevSchedule != 0 && time.Until(time.Unix(prevSchedule, 0)) <= 0 {
+		} else if room.NextLiveSchedule != 0 && time.Until(time.Unix(room.NextLiveSchedule, 0)) <= 0 {
 			// Scheduled time has passed; poll stream URLs directly rather than
 			// waiting for is_live, matching sba-stream Phase 1→2 transition.
 			// resolveHLS has a 60 s timeout; if no stream appears, we fall back
 			// to is_live polling on the next iteration.
 			w.runDownload(urlKey, room)
-			prevSchedule = 0
 			room.NextLiveSchedule = 0
 		}
 
