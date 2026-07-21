@@ -4,6 +4,12 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 3
+    groups:
+      all-non-major:
+        patterns: ["*"]
+        update-types: [minor, patch]
     commit-message:
       prefix: deps
 
@@ -11,5 +17,11 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 3
+    groups:
+      all-non-major:
+        patterns: ["*"]
+        update-types: [minor, patch]
     commit-message:
       prefix: deps
