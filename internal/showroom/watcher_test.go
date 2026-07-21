@@ -39,6 +39,7 @@ func TestWatchRoom_LogsScheduledImmediately(t *testing.T) {
 	}
 	origStdout := os.Stdout
 	os.Stdout = pw
+	t.Cleanup(func() { os.Stdout = origStdout })
 
 	ctx, cancel := context.WithCancel(context.Background())
 	w := &watcher{
