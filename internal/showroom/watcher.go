@@ -167,6 +167,13 @@ func (w *watcher) watchRoom(urlKey string) {
 		case <-time.After(d):
 		}
 
+		// Scheduled time passed during the sleep: poll stream URLs before
+		// the next fetchRoom, matching sba-stream Phase 1→2 priority.
+		if room.NextLiveSchedule != 0 && time.Until(time.Unix(room.NextLiveSchedule, 0)) <= 0 {
+			w.runDownload(urlKey, room)
+			room.NextLiveSchedule = 0
+		}
+
 		updated, err := fetchRoom(w.ctx, urlKey)
 		if err != nil {
 			logf("Error: %s", err)
