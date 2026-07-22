@@ -1,0 +1,25 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "if": "Bash(git push *)",
+            "command": "cd /Users/kent/repositories/sba-showroom && mise run test",
+            "asyncRewake": true,
+            "statusMessage": "Running tests in background..."
+          },
+          {
+            "type": "agent",
+            "if": "Bash(git push *)",
+            "prompt": "Check if docs need updating before this git push. Run `git diff main...HEAD --name-only` to see what files changed on this branch. Per CONTRIBUTING.md: if any files in cmd/ changed (commands or flags), README.md must be updated. If README looks stale, block the push and explain what needs updating. Otherwise allow the push.",
+            "timeout": 60,
+            "statusMessage": "Checking docs before push..."
+          }
+        ]
+      }
+    ]
+  }
+}
