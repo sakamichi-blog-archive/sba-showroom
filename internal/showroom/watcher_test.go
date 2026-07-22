@@ -289,13 +289,13 @@ func TestWatchRoom_NoDoubleDownloadAfterPassthrough(t *testing.T) {
 	cdnSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		if roomCalls.Add(1) == 1 {
-			fmt.Fprintf(w, `{"id":1,"url_key":"testroom","is_live":false,"next_live_schedule":%d}`, pastTS)
+			_, _ = fmt.Fprintf(w, `{"id":1,"url_key":"testroom","is_live":false,"next_live_schedule":%d}`, pastTS)
 		} else {
 			select {
 			case isLiveServed <- struct{}{}:
 			default:
 			}
-			fmt.Fprint(w, `{"id":1,"url_key":"testroom","is_live":true}`)
+			_, _ = fmt.Fprint(w, `{"id":1,"url_key":"testroom","is_live":true}`)
 		}
 	}))
 	defer cdnSrv.Close()
@@ -316,9 +316,9 @@ func TestWatchRoom_NoDoubleDownloadAfterPassthrough(t *testing.T) {
 		if streamCalls.Add(1) == 1 {
 			// Use the showroom server itself as a dummy HLS URL so ffmpeg
 			// (if present) fails immediately rather than timing out.
-			fmt.Fprintf(w, `{"streaming_url_list":[{"type":"hls","quality":1,"url":"%s/dummy.m3u8"}]}`, showroomSrv.URL)
+			_, _ = fmt.Fprintf(w, `{"streaming_url_list":[{"type":"hls","quality":1,"url":"%s/dummy.m3u8"}]}`, showroomSrv.URL)
 		} else {
-			fmt.Fprint(w, `{"streaming_url_list":[]}`)
+			_, _ = fmt.Fprint(w, `{"streaming_url_list":[]}`)
 		}
 	}))
 	defer showroomSrv.Close()
