@@ -1,7 +1,6 @@
 ---
 name: pre-push-check
 description: Check whether docs need updating before a git push. Use before pushing a branch.
-version: 0.1.0
 ---
 
 Check whether docs need updating before a git push.
