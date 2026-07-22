@@ -16,7 +16,7 @@
             "if": "Bash(git push *)",
             "prompt": "Run /pre-push-check before allowing this push.",
             "timeout": 60,
-            "statusMessage": "Checking docs before push..."
+            "statusMessage": "Checking docs and tests before push..."
           }
         ]
       }
