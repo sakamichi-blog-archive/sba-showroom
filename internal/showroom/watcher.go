@@ -141,13 +141,20 @@ func (w *watcher) watchRoom(urlKey string) {
 	}
 
 	var prevSchedule int64
+	// recentPassthrough is set when a Phase 1→2 passthrough download finds a
+	// stream URL. It suppresses the subsequent is_live=true response that
+	// SHOWROOM sets ~1 min after stream start, preventing a duplicate download
+	// of the same session. Cleared when fetchRoom first returns is_live=false.
+	var recentPassthrough bool
 	if room.NextLiveSchedule != 0 {
 		prevSchedule = room.NextLiveSchedule
 		logf("Scheduled: %s", time.Unix(prevSchedule, 0).Format("2006-01-02 15:04:05"))
 	}
 	for {
 		if room.IsLive {
-			w.runDownload(urlKey, room)
+			if !recentPassthrough {
+				w.runDownload(urlKey, room)
+			}
 			room.IsLive = false
 			room.NextLiveSchedule = 0
 			prevSchedule = 0
@@ -157,7 +164,9 @@ func (w *watcher) watchRoom(urlKey string) {
 			// resolveHLS has a 60 s timeout. After it returns (success or
 			// timeout), NextLiveSchedule is cleared and fetchRoom runs; if the
 			// API still reports a past schedule the passthrough re-fires then.
-			w.runDownload(urlKey, room)
+			if w.runDownload(urlKey, room) {
+				recentPassthrough = true
+			}
 			room.NextLiveSchedule = 0
 		}
 
@@ -172,7 +181,9 @@ func (w *watcher) watchRoom(urlKey string) {
 		// fetchRoom (Phase 1→2 priority). NextLiveSchedule is cleared after
 		// runDownload; fetchRoom then re-evaluates the live/schedule state.
 		if room.NextLiveSchedule != 0 && time.Until(time.Unix(room.NextLiveSchedule, 0)) <= 0 {
-			w.runDownload(urlKey, room)
+			if w.runDownload(urlKey, room) {
+				recentPassthrough = true
+			}
 			room.NextLiveSchedule = 0
 		}
 
@@ -187,6 +198,10 @@ func (w *watcher) watchRoom(urlKey string) {
 			continue
 		}
 
+		if !updated.IsLive {
+			recentPassthrough = false
+		}
+
 		if updated.NextLiveSchedule != 0 && updated.NextLiveSchedule != prevSchedule {
 			prevSchedule = updated.NextLiveSchedule
 			logf("Scheduled: %s", time.Unix(prevSchedule, 0).Format("2006-01-02 15:04:05"))
@@ -196,14 +211,18 @@ func (w *watcher) watchRoom(urlKey string) {
 	}
 }
 
-func (w *watcher) runDownload(urlKey string, room *roomAPI) {
+// runDownload resolves the HLS stream and records it with ffmpeg. It returns
+// true when resolveHLS found a stream URL (the live event is considered
+// consumed regardless of the ffmpeg outcome), and false when no stream was
+// found or the context was cancelled before resolution.
+func (w *watcher) runDownload(urlKey string, room *roomAPI) bool {
 	if w.ctx.Err() != nil {
-		return
+		return false
 	}
 
 	streamURL, err := w.resolveHLS(urlKey, room.ID)
 	if err != nil {
-		return
+		return false
 	}
 
 	start := time.Now()
@@ -212,7 +231,7 @@ func (w *watcher) runDownload(urlKey string, room *roomAPI) {
 	proc, err := runner.StartFFmpeg(runner.FFmpegArgs{Input: streamURL, Detached: true}, outPath)
 	if err != nil {
 		fmt.Printf("[%s] Error: %s\n", urlKey, err)
-		return
+		return true
 	}
 
 	fmt.Printf("[%s] File:      %s\n", urlKey, outPath)
@@ -238,6 +257,7 @@ func (w *watcher) runDownload(urlKey string, room *roomAPI) {
 		fmt.Printf("[%s] FFmpeg: %s\n", urlKey, runErr)
 	}
 	fmt.Printf("[%s] Finished: %s\n", urlKey, time.Now().Format("2006-01-02 15:04:05"))
+	return true
 }
 
 // resolveHLS finds the best HLS URL for the room, with a 60s timeout so the
@@ -311,9 +331,12 @@ func (w *watcher) waitForDownloads() {
 	}
 }
 
+// defaultPollInterval is the idle poll interval (no schedule). Overridden in tests.
+var defaultPollInterval = 20 * time.Second
+
 func watchPollInterval(nextSchedule int64) time.Duration {
 	if nextSchedule == 0 {
-		return 20 * time.Second
+		return defaultPollInterval
 	}
 	remaining := time.Until(time.Unix(nextSchedule, 0))
 	switch {
