@@ -1,0 +1,32 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "if": "Bash(git push *)",
+            "command": "mise run test",
+            "asyncRewake": true,
+            "statusMessage": "Running tests in background..."
+          },
+          {
+            "type": "agent",
+            "if": "Bash(git push *)",
+            "prompt": "Run /pre-push-check before allowing this push.",
+            "timeout": 60,
+            "statusMessage": "Checking docs and tests before push..."
+          }
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "allow": [
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git rev-parse *)"
+    ]
+  }
+}
