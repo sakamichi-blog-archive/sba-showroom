@@ -207,7 +207,8 @@ func (w *watcher) runDownload(urlKey string, room *roomAPI) {
 	}
 
 	outPath := buildFileName(urlKey, time.Now().Unix()) + ".mp4"
-	fmt.Printf("[%s] Recording: %s\n", urlKey, outPath)
+	fmt.Printf("[%s] File:      %s\n", urlKey, outPath)
+	fmt.Printf("[%s] Recording: %s\n", urlKey, time.Now().Format("2006-01-02 15:04:05"))
 
 	proc, err := runner.StartFFmpeg(runner.FFmpegArgs{Input: streamURL, Detached: true}, outPath)
 	if err != nil {
@@ -234,7 +235,7 @@ func (w *watcher) runDownload(urlKey string, room *roomAPI) {
 	if runErr != nil {
 		fmt.Printf("[%s] FFmpeg: %s\n", urlKey, runErr)
 	}
-	fmt.Printf("[%s] Finished: %s\n", urlKey, outPath)
+	fmt.Printf("[%s] Finished: %s\n", urlKey, time.Now().Format("2006-01-02 15:04:05"))
 }
 
 // resolveHLS finds the best HLS URL for the room, with a 60s timeout so the
