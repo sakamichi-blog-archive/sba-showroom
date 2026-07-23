@@ -281,6 +281,11 @@ func TestWatchRoom_NoDoubleDownloadAfterPassthrough(t *testing.T) {
 	defaultPollInterval = 100 * time.Millisecond
 	t.Cleanup(func() { defaultPollInterval = orig })
 
+	// Prevent ffmpeg from being found so StartFFmpeg fails immediately and
+	// deterministically rather than blocking in proc.Wait() while ffmpeg
+	// retries or times out against the fake HLS URL.
+	t.Setenv("PATH", "")
+
 	pastTS := time.Now().Add(-1 * time.Minute).Unix()
 
 	var roomCalls atomic.Int32
