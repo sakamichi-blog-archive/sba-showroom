@@ -9,7 +9,7 @@
             "if": "Bash(git push *)",
             "command": "mise run check",
             "asyncRewake": true,
-            "statusMessage": "Running tests in background..."
+            "statusMessage": "Running checks in background..."
           },
           {
             "type": "agent",
