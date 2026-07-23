@@ -10,13 +10,6 @@
             "command": "mise run check",
             "asyncRewake": true,
             "statusMessage": "Running checks in background..."
-          },
-          {
-            "type": "agent",
-            "if": "Bash(git push *)",
-            "prompt": "Run /pre-push-check before allowing this push.",
-            "timeout": 60,
-            "statusMessage": "Checking docs and tests before push..."
           }
         ]
       }
