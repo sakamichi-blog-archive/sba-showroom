@@ -363,3 +363,41 @@ func TestWatchRoom_NoDoubleDownloadAfterPassthrough(t *testing.T) {
 		t.Errorf("stream URL endpoint called %d time(s); want 1 — duplicate download after passthrough?", got)
 	}
 }
+
+func TestRunDownload_ReservationBlocksConcurrentSameRoom(t *testing.T) {
+	// A campaign can list the same room under two key strings; Watch only dedups
+	// the raw keys, so both spawn watchRoom goroutines that resolve to the same
+	// canonical url_key and call runDownload concurrently. The second call must
+	// be rejected by the reservation without touching the stream URL endpoint,
+	// so only one recording of the stream starts.
+	var streamCalls atomic.Int32
+	showroomSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/live/streaming_url" {
+			streamCalls.Add(1)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = fmt.Fprint(w, `{"streaming_url_list":[]}`)
+	}))
+	defer showroomSrv.Close()
+
+	oldShowroom := showroomBaseURL
+	showroomBaseURL = showroomSrv.URL
+	defer func() { showroomBaseURL = oldShowroom }()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	wt := &watcher{
+		ctx:       ctx,
+		cancel:    cancel,
+		active:    make(map[string]*runner.FFmpegProcess),
+		recording: map[string]bool{"testroom": true}, // pretend a recording is already in progress
+	}
+
+	room := &roomAPI{ID: 1, URLKey: "testroom"}
+	if got := wt.runDownload("testroom", room); got {
+		t.Error("runDownload returned true while room already reserved; want false")
+	}
+	if got := streamCalls.Load(); got != 0 {
+		t.Errorf("stream URL endpoint called %d time(s) while reserved; want 0", got)
+	}
+}

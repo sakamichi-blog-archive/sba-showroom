@@ -24,7 +24,14 @@ type watcher struct {
 	cancel  context.CancelFunc
 	verbose bool
 	mu      sync.Mutex
-	active  map[string]*runner.FFmpegProcess // urlKey → in-progress download
+	active  map[string]*runner.FFmpegProcess // urlKey → running ffmpeg process
+	// recording reserves a canonical url_key for the whole resolve+record span,
+	// starting before resolveHLS (which active does not cover). A campaign can
+	// list the same room under two key strings; Watch only dedups the raw keys,
+	// so both spawn watchRoom goroutines that resolve to the same canonical
+	// url_key. This reservation stops the second one from starting a concurrent
+	// recording of the same stream.
+	recording map[string]bool
 }
 
 // Watch fetches rooms for each campaign slug and monitors them for live streams,
@@ -68,10 +75,11 @@ func Watch(opts WatchOptions) error {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	w := &watcher{
-		ctx:     ctx,
-		cancel:  cancel,
-		verbose: opts.Verbose,
-		active:  make(map[string]*runner.FFmpegProcess),
+		ctx:       ctx,
+		cancel:    cancel,
+		verbose:   opts.Verbose,
+		active:    make(map[string]*runner.FFmpegProcess),
+		recording: make(map[string]bool),
 	}
 
 	for _, key := range roomKeys {
@@ -219,6 +227,27 @@ func (w *watcher) runDownload(urlKey string, room *roomAPI) bool {
 	if w.ctx.Err() != nil {
 		return false
 	}
+
+	// Reserve the room before any work so a second trigger for the same
+	// canonical url_key cannot start a concurrent recording of the same stream.
+	// Held across resolveHLS + ffmpeg and released on return, so a genuine
+	// resume after ffmpeg exits (stream still live) still proceeds on the next
+	// poll.
+	w.mu.Lock()
+	if w.recording == nil {
+		w.recording = make(map[string]bool)
+	}
+	if w.recording[urlKey] {
+		w.mu.Unlock()
+		return false
+	}
+	w.recording[urlKey] = true
+	w.mu.Unlock()
+	defer func() {
+		w.mu.Lock()
+		delete(w.recording, urlKey)
+		w.mu.Unlock()
+	}()
 
 	streamURL, err := w.resolveHLS(urlKey, room.ID)
 	if err != nil {
