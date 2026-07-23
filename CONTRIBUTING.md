@@ -2,6 +2,8 @@
 
 ## Branches
 
+Never commit directly to `main`. Always work on a branch and open a pull request.
+
 Use the `features/NAME` format for branch names.
 
 ## Commits

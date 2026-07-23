@@ -9,6 +9,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -265,5 +266,100 @@ func TestWatchRoom_StreamURLsBeforeRoomAPIAtSchedule(t *testing.T) {
 	}
 	if secondRoom != -1 && firstStream > secondRoom {
 		t.Errorf("stream called after second fetchRoom; order: %v", callOrder)
+	}
+}
+
+func TestWatchRoom_NoDoubleDownloadAfterPassthrough(t *testing.T) {
+	// After a Phase 1→2 passthrough fires (schedule passed, is_live=false) and
+	// runDownload finds a stream URL, the watcher must NOT start a second
+	// download when the SHOWROOM API subsequently reports is_live=true for the
+	// same session (~1 min lag). The stream URL endpoint should be called exactly
+	// once (for the passthrough's resolveHLS call).
+
+	// Speed up the idle poll so the test completes in milliseconds.
+	orig := defaultPollInterval
+	defaultPollInterval = 100 * time.Millisecond
+	t.Cleanup(func() { defaultPollInterval = orig })
+
+	// Prevent ffmpeg from being found so StartFFmpeg fails immediately and
+	// deterministically rather than blocking in proc.Wait() while ffmpeg
+	// retries or times out against the fake HLS URL.
+	t.Setenv("PATH", "")
+
+	pastTS := time.Now().Add(-1 * time.Minute).Unix()
+
+	var roomCalls atomic.Int32
+	isLiveServed := make(chan struct{}, 1)
+
+	cdnSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if roomCalls.Add(1) == 1 {
+			_, _ = fmt.Fprintf(w, `{"id":1,"url_key":"testroom","is_live":false,"next_live_schedule":%d}`, pastTS)
+		} else {
+			select {
+			case isLiveServed <- struct{}{}:
+			default:
+			}
+			_, _ = fmt.Fprint(w, `{"id":1,"url_key":"testroom","is_live":true}`)
+		}
+	}))
+	defer cdnSrv.Close()
+
+	// Return a valid-looking HLS URL on the first call so resolveHLS succeeds
+	// (triggering the passthrough). Count all calls; a second call means the
+	// bug fired a second runDownload.
+	// streamCalls counts only /api/live/streaming_url hits (resolveHLS calls),
+	// not ffmpeg's subsequent m3u8 fetch against the same test server.
+	var streamCalls atomic.Int32
+	var showroomSrv *httptest.Server
+	showroomSrv = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.URL.Path != "/api/live/streaming_url" {
+			http.NotFound(w, r)
+			return
+		}
+		if streamCalls.Add(1) == 1 {
+			// Use the showroom server itself as a dummy HLS URL so ffmpeg
+			// (if present) fails immediately rather than timing out.
+			_, _ = fmt.Fprintf(w, `{"streaming_url_list":[{"type":"hls","quality":1,"url":"%s/dummy.m3u8"}]}`, showroomSrv.URL)
+		} else {
+			_, _ = fmt.Fprint(w, `{"streaming_url_list":[]}`)
+		}
+	}))
+	defer showroomSrv.Close()
+
+	oldCDN, oldShowroom := cdnBaseURL, showroomBaseURL
+	cdnBaseURL, showroomBaseURL = cdnSrv.URL, showroomSrv.URL
+	defer func() { cdnBaseURL, showroomBaseURL = oldCDN, oldShowroom }()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	wt := &watcher{ctx: ctx, cancel: cancel, active: make(map[string]*runner.FFmpegProcess)}
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		wt.watchRoom("testroom")
+	}()
+
+	// Wait until fetchRoom has returned is_live=true at least once, meaning
+	// the passthrough download completed and the watcher processed the API lag.
+	select {
+	case <-isLiveServed:
+	case <-time.After(10 * time.Second):
+		cancel()
+		wg.Wait()
+		t.Fatal("is_live=true never served; passthrough may not have fired")
+	}
+
+	// Allow one more poll cycle for the is_live=true response to be processed
+	// before we shut down and check the count.
+	time.Sleep(500 * time.Millisecond)
+	cancel()
+	wg.Wait()
+
+	got := streamCalls.Load()
+	if got != 1 {
+		t.Errorf("stream URL endpoint called %d time(s); want 1 — duplicate download after passthrough?", got)
 	}
 }
