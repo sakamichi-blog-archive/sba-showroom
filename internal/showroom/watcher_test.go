@@ -401,3 +401,19 @@ func TestRunDownload_ReservationBlocksConcurrentSameRoom(t *testing.T) {
 		t.Errorf("stream URL endpoint called %d time(s) while reserved; want 0", got)
 	}
 }
+
+func TestClaimWatch(t *testing.T) {
+	// Two campaign keys resolving to the same canonical url_key: the first
+	// goroutine claims it, the second must be told to stop. A different key is
+	// unaffected.
+	w := &watcher{}
+	if !w.claimWatch("46_room") {
+		t.Fatal("first claim of a room should succeed")
+	}
+	if w.claimWatch("46_room") {
+		t.Error("second claim of the same canonical url_key should fail")
+	}
+	if !w.claimWatch("46_other") {
+		t.Error("claim of a different room should succeed")
+	}
+}

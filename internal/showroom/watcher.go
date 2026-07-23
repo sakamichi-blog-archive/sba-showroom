@@ -32,6 +32,26 @@ type watcher struct {
 	// url_key. This reservation stops the second one from starting a concurrent
 	// recording of the same stream.
 	recording map[string]bool
+	// watched holds the canonical url_keys already owned by a watchRoom
+	// goroutine. When two raw keys resolve to the same room, the second
+	// goroutine stops instead of polling redundantly for the stream's lifetime.
+	watched map[string]bool
+}
+
+// claimWatch marks urlKey as owned by a watchRoom goroutine and returns true.
+// It returns false if another goroutine already owns the key, signalling this
+// goroutine to stop as a duplicate.
+func (w *watcher) claimWatch(urlKey string) bool {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	if w.watched == nil {
+		w.watched = make(map[string]bool)
+	}
+	if w.watched[urlKey] {
+		return false
+	}
+	w.watched[urlKey] = true
+	return true
 }
 
 // Watch fetches rooms for each campaign slug and monitors them for live streams,
@@ -80,6 +100,7 @@ func Watch(opts WatchOptions) error {
 		verbose:   opts.Verbose,
 		active:    make(map[string]*runner.FFmpegProcess),
 		recording: make(map[string]bool),
+		watched:   make(map[string]bool),
 	}
 
 	for _, key := range roomKeys {
@@ -144,6 +165,14 @@ func (w *watcher) watchRoom(urlKey string) {
 		}
 	}
 	urlKey = room.URLKey
+	if !w.claimWatch(urlKey) {
+		// Another goroutine (started from a different campaign key) already
+		// watches this room; stop rather than double-poll and double-record.
+		if w.verbose {
+			logf("Duplicate of an already-watched room; stopping")
+		}
+		return
+	}
 	if w.verbose {
 		logf("%s", room.Name)
 	}
