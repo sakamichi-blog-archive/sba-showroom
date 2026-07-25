@@ -2,7 +2,10 @@
 !.gitignore
 !.github
 !.release-please-manifest.json
-!.claude
-.claude/settings.local.json
-.claude/worktrees/
+
+*.mp4
 sba-showroom
+
+!.claude
+.claude/worktrees/
+.claude/settings.local.json
