@@ -363,3 +363,57 @@ func TestWatchRoom_NoDoubleDownloadAfterPassthrough(t *testing.T) {
 		t.Errorf("stream URL endpoint called %d time(s); want 1 — duplicate download after passthrough?", got)
 	}
 }
+
+func TestRunDownload_SkipsWhenAlreadyRecording(t *testing.T) {
+	// The reservation guard: when a room's canonical url_key is already being
+	// recorded (as happens when a campaign lists the same room under two keys,
+	// spawning two watchRoom goroutines that resolve to the same url_key), a
+	// second runDownload for that key must be rejected without touching the
+	// stream URL endpoint, so only one recording of the stream starts.
+	var streamCalls atomic.Int32
+	showroomSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/live/streaming_url" {
+			streamCalls.Add(1)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = fmt.Fprint(w, `{"streaming_url_list":[]}`)
+	}))
+	defer showroomSrv.Close()
+
+	oldShowroom := showroomBaseURL
+	showroomBaseURL = showroomSrv.URL
+	defer func() { showroomBaseURL = oldShowroom }()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	wt := &watcher{
+		ctx:       ctx,
+		cancel:    cancel,
+		active:    make(map[string]*runner.FFmpegProcess),
+		recording: map[string]bool{"testroom": true}, // pretend a recording is already in progress
+	}
+
+	room := &roomAPI{ID: 1, URLKey: "testroom"}
+	if got := wt.runDownload("testroom", room); got {
+		t.Error("runDownload returned true while room already reserved; want false")
+	}
+	if got := streamCalls.Load(); got != 0 {
+		t.Errorf("stream URL endpoint called %d time(s) while reserved; want 0", got)
+	}
+}
+
+func TestClaimWatch(t *testing.T) {
+	// Two campaign keys resolving to the same canonical url_key: the first
+	// goroutine claims it, the second must be told to stop. A different key is
+	// unaffected.
+	w := &watcher{}
+	if !w.claimWatch("46_room") {
+		t.Fatal("first claim of a room should succeed")
+	}
+	if w.claimWatch("46_room") {
+		t.Error("second claim of the same canonical url_key should fail")
+	}
+	if !w.claimWatch("46_other") {
+		t.Error("claim of a different room should succeed")
+	}
+}
