@@ -20,6 +20,9 @@
       "Bash(git diff *)",
       "Bash(git log *)",
       "Bash(git rev-parse *)"
+    ],
+    "ask": [
+      "Bash(git branch -D *)"
     ]
   }
 }
