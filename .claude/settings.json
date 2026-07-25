@@ -24,5 +24,6 @@
     "ask": [
       "Bash(git branch -D *)"
     ]
-  }
+  },
+  "plansDirectory": "./.claude/plans"
 }
