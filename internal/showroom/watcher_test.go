@@ -364,12 +364,12 @@ func TestWatchRoom_NoDoubleDownloadAfterPassthrough(t *testing.T) {
 	}
 }
 
-func TestRunDownload_ReservationBlocksConcurrentSameRoom(t *testing.T) {
-	// A campaign can list the same room under two key strings; Watch only dedups
-	// the raw keys, so both spawn watchRoom goroutines that resolve to the same
-	// canonical url_key and call runDownload concurrently. The second call must
-	// be rejected by the reservation without touching the stream URL endpoint,
-	// so only one recording of the stream starts.
+func TestRunDownload_SkipsWhenAlreadyRecording(t *testing.T) {
+	// The reservation guard: when a room's canonical url_key is already being
+	// recorded (as happens when a campaign lists the same room under two keys,
+	// spawning two watchRoom goroutines that resolve to the same url_key), a
+	// second runDownload for that key must be rejected without touching the
+	// stream URL endpoint, so only one recording of the stream starts.
 	var streamCalls atomic.Int32
 	showroomSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/api/live/streaming_url" {
