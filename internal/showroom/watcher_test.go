@@ -426,7 +426,9 @@ func TestWatchRoom_SameRoomTwoAliasesEchoedURLKey(t *testing.T) {
 	// campaign lists the same room under two aliases, dedup by url_key never
 	// collides (each goroutine sees a different value), so both goroutines
 	// must instead collapse via the shared numeric room ID. Only one may
-	// reach resolveHLS / runDownload.
+	// reach resolveHLS / runDownload, and the rejection must be logged
+	// unconditionally (not gated by --verbose) so a real recurrence is
+	// provable from the watch log rather than reconstructed after the fact.
 	cdnSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		alias := strings.TrimPrefix(r.URL.Path, "/room/")
 		w.Header().Set("Content-Type", "application/json")
@@ -448,6 +450,14 @@ func TestWatchRoom_SameRoomTwoAliasesEchoedURLKey(t *testing.T) {
 	cdnBaseURL, showroomBaseURL = cdnSrv.URL, showroomSrv.URL
 	defer func() { cdnBaseURL, showroomBaseURL = oldCDN, oldShowroom }()
 
+	pr, pw, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	origStdout := os.Stdout
+	os.Stdout = pw
+	t.Cleanup(func() { os.Stdout = origStdout })
+
 	ctx, cancel := context.WithCancel(context.Background())
 	wt := &watcher{ctx: ctx, cancel: cancel, active: make(map[string]*runner.FFmpegProcess)}
 
@@ -456,12 +466,48 @@ func TestWatchRoom_SameRoomTwoAliasesEchoedURLKey(t *testing.T) {
 	go func() { defer wg.Done(); wt.watchRoom("alias1") }()
 	go func() { defer wg.Done(); wt.watchRoom("alias2") }()
 
-	// Give both goroutines time to fetchRoom, claim/reject via room ID, and
-	// (for the winner) call runDownload -> resolveHLS.
-	time.Sleep(500 * time.Millisecond)
+	// Read from the pipe until the rejection is logged, rather than sleeping
+	// a fixed duration, so the test is not sensitive to goroutine scheduling.
+	logReceived := make(chan string, 1)
+	go func() {
+		var buf bytes.Buffer
+		tmp := make([]byte, 256)
+		for {
+			n, err := pr.Read(tmp)
+			buf.Write(tmp[:n])
+			if strings.Contains(buf.String(), "Duplicate of an already-watched room") {
+				logReceived <- buf.String()
+				return
+			}
+			if err != nil {
+				return
+			}
+		}
+	}()
+
+	var output string
+	timedOut := false
+	select {
+	case output = <-logReceived:
+	case <-time.After(2 * time.Second):
+		timedOut = true
+	}
+	// The rejection log can land before the winning goroutine reaches
+	// resolveHLS; give it a moment to make its stream URL call before
+	// cancelling so streamCalls reflects the winner's attempt.
+	time.Sleep(200 * time.Millisecond)
 	cancel()
 	wg.Wait()
+	_ = pw.Close()
+	os.Stdout = origStdout
+	_ = pr.Close()
 
+	if timedOut {
+		t.Fatal("'Duplicate of an already-watched room' not logged within 2s — is the rejection log gated by --verbose again?")
+	}
+	if !strings.Contains(output, "Duplicate of an already-watched room (id=1)") {
+		t.Errorf("expected rejection log with room id=1; got: %q", output)
+	}
 	if got := streamCalls.Load(); got != 1 {
 		t.Errorf("stream URL endpoint called %d time(s); want 1 — both aliases recorded concurrently?", got)
 	}

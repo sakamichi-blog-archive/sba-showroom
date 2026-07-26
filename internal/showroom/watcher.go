@@ -172,9 +172,11 @@ func (w *watcher) watchRoom(urlKey string) {
 	if !w.claimWatch(room.ID) {
 		// Another goroutine (started from a different campaign key) already
 		// watches this room; stop rather than double-poll and double-record.
-		if w.verbose {
-			logf("Duplicate of an already-watched room; stopping")
-		}
+		// Logged unconditionally (not gated by --verbose): if two url_key
+		// aliases ever resolve to the same room ID, this line is the direct
+		// evidence — the alternative is reconstructing it after the fact from
+		// output file timestamps.
+		logf("Duplicate of an already-watched room (id=%d); stopping", room.ID)
 		return
 	}
 	if w.verbose {
