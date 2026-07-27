@@ -25,32 +25,36 @@ type watcher struct {
 	verbose bool
 	mu      sync.Mutex
 	active  map[string]*runner.FFmpegProcess // urlKey → running ffmpeg process
-	// recording reserves a canonical url_key for the whole resolve+record span,
-	// starting before resolveHLS (which active does not cover). A campaign can
-	// list the same room under two key strings; Watch only dedups the raw keys,
-	// so both spawn watchRoom goroutines that resolve to the same canonical
-	// url_key. This reservation stops the second one from starting a concurrent
-	// recording of the same stream.
-	recording map[string]bool
-	// watched holds the canonical url_keys already owned by a watchRoom
-	// goroutine. When two raw keys resolve to the same room, the second
-	// goroutine stops instead of polling redundantly for the stream's lifetime.
-	watched map[string]bool
+	// recording reserves a room ID for the whole resolve+record span, starting
+	// before resolveHLS (which active does not cover). A campaign can list the
+	// same room under two key strings (aliases), so both spawn watchRoom
+	// goroutines. Keyed by numeric room ID rather than url_key: the CDN API's
+	// url_key field echoes back whichever alias was queried rather than
+	// returning one canonical value, so two aliases for the same room resolve
+	// to two different url_key strings but the same ID. This reservation
+	// stops the second one from starting a concurrent recording of the same
+	// stream.
+	recording map[int]bool
+	// watched holds the room IDs already owned by a watchRoom goroutine (see
+	// recording for why ID rather than url_key). When two raw keys resolve to
+	// the same room, the second goroutine stops instead of polling
+	// redundantly for the stream's lifetime.
+	watched map[int]bool
 }
 
-// claimWatch marks urlKey as owned by a watchRoom goroutine and returns true.
-// It returns false if another goroutine already owns the key, signalling this
-// goroutine to stop as a duplicate.
-func (w *watcher) claimWatch(urlKey string) bool {
+// claimWatch marks roomID as owned by a watchRoom goroutine and returns true.
+// It returns false if another goroutine already owns the room, signalling
+// this goroutine to stop as a duplicate.
+func (w *watcher) claimWatch(roomID int) bool {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	if w.watched == nil {
-		w.watched = make(map[string]bool)
+		w.watched = make(map[int]bool)
 	}
-	if w.watched[urlKey] {
+	if w.watched[roomID] {
 		return false
 	}
-	w.watched[urlKey] = true
+	w.watched[roomID] = true
 	return true
 }
 
@@ -99,8 +103,8 @@ func Watch(opts WatchOptions) error {
 		cancel:    cancel,
 		verbose:   opts.Verbose,
 		active:    make(map[string]*runner.FFmpegProcess),
-		recording: make(map[string]bool),
-		watched:   make(map[string]bool),
+		recording: make(map[int]bool),
+		watched:   make(map[int]bool),
 	}
 
 	for _, key := range roomKeys {
@@ -165,12 +169,14 @@ func (w *watcher) watchRoom(urlKey string) {
 		}
 	}
 	urlKey = room.URLKey
-	if !w.claimWatch(urlKey) {
+	if !w.claimWatch(room.ID) {
 		// Another goroutine (started from a different campaign key) already
 		// watches this room; stop rather than double-poll and double-record.
-		if w.verbose {
-			logf("Duplicate of an already-watched room; stopping")
-		}
+		// Logged unconditionally (not gated by --verbose): if two url_key
+		// aliases ever resolve to the same room ID, this line is the direct
+		// evidence — the alternative is reconstructing it after the fact from
+		// output file timestamps.
+		logf("Duplicate of an already-watched room (id=%d); stopping", room.ID)
 		return
 	}
 	if w.verbose {
@@ -257,24 +263,24 @@ func (w *watcher) runDownload(urlKey string, room *roomAPI) bool {
 		return false
 	}
 
-	// Reserve the room before any work so a second trigger for the same
-	// canonical url_key cannot start a concurrent recording of the same stream.
-	// Held across resolveHLS + ffmpeg and released on return, so a genuine
-	// resume after ffmpeg exits (stream still live) still proceeds on the next
-	// poll.
+	// Reserve the room before any work so a second trigger for the same room
+	// cannot start a concurrent recording of the same stream. Keyed by
+	// numeric ID, not url_key (see the recording field comment). Held across
+	// resolveHLS + ffmpeg and released on return, so a genuine resume after
+	// ffmpeg exits (stream still live) still proceeds on the next poll.
 	w.mu.Lock()
 	if w.recording == nil {
-		w.recording = make(map[string]bool)
+		w.recording = make(map[int]bool)
 	}
-	if w.recording[urlKey] {
+	if w.recording[room.ID] {
 		w.mu.Unlock()
 		return false
 	}
-	w.recording[urlKey] = true
+	w.recording[room.ID] = true
 	w.mu.Unlock()
 	defer func() {
 		w.mu.Lock()
-		delete(w.recording, urlKey)
+		delete(w.recording, room.ID)
 		w.mu.Unlock()
 	}()
 
