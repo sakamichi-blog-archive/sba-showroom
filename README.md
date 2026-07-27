@@ -64,7 +64,9 @@ sba-showroom download https://www.showroom-live.com/46_iwamotorenka 17:30
 sba-showroom download --no-retry https://www.showroom-live.com/46_iwamotorenka
 ```
 
-### `watch`
+### `watch` (experimental)
+
+> **Experimental:** `watch` is under active development. Concurrent multi-room recording has had several duplicate-download bugs (see [CHANGELOG](CHANGELOG.md)); for a single critical room, `download` is the more battle-tested choice.
 
 Monitor one or more campaign groups and/or individual rooms, automatically downloading any that go live. Multiple rooms are downloaded concurrently.
 

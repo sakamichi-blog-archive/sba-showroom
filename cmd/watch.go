@@ -24,6 +24,8 @@ func runWatch(args []string) {
 	fs.Usage = func() {
 		fmt.Println("Usage: sba-showroom watch [--campaign <nogi|hinata|sakura>] [URL ...]")
 		fmt.Println()
+		fmt.Println("EXPERIMENTAL: this command is under active development; expect bugs.")
+		fmt.Println()
 		fmt.Println("At least one --campaign or room URL is required.")
 		fmt.Println()
 		fmt.Println("Flags:")
@@ -36,6 +38,9 @@ func runWatch(args []string) {
 		fs.Usage()
 		os.Exit(1)
 	}
+
+	fmt.Fprintln(os.Stderr, "Warning: watch is experimental and still being hardened; expect occasional bugs.")
+	fmt.Fprintln(os.Stderr, "Report issues: https://github.com/sakamichi-blog-archive/sba-showroom/issues")
 
 	seen := make(map[string]bool)
 	var unique []string
