@@ -493,9 +493,12 @@ func TestWatchRoom_SameRoomTwoAliasesEchoedURLKey(t *testing.T) {
 		timedOut = true
 	}
 	// The rejection log can land before the winning goroutine reaches
-	// resolveHLS; give it a moment to make its stream URL call before
-	// cancelling so streamCalls reflects the winner's attempt.
-	time.Sleep(200 * time.Millisecond)
+	// resolveHLS; wait (bounded) for its stream URL call to land instead of
+	// sleeping a fixed duration, so this isn't flaky on slower runners.
+	deadline := time.Now().Add(2 * time.Second)
+	for streamCalls.Load() == 0 && time.Now().Before(deadline) {
+		time.Sleep(10 * time.Millisecond)
+	}
 	cancel()
 	wg.Wait()
 	_ = pw.Close()
