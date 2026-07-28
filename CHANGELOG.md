@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.3.0](https://github.com/sakamichi-blog-archive/sba-showroom/compare/v0.2.0...v0.3.0) (2026-07-28)
+
+
+### Features
+
+* add start/end timestamps to watcher download output ([#26](https://github.com/sakamichi-blog-archive/sba-showroom/issues/26)) ([d60dcc6](https://github.com/sakamichi-blog-archive/sba-showroom/commit/d60dcc653cdc6ee1b3e58085deeb321432aa573f))
+* Check stream URLs directly after scheduled time ([#17](https://github.com/sakamichi-blog-archive/sba-showroom/issues/17)) ([9fc762e](https://github.com/sakamichi-blog-archive/sba-showroom/commit/9fc762ef9e66e074c1f306f4a555f3b24ecbbec5))
+* watch command ([#15](https://github.com/sakamichi-blog-archive/sba-showroom/issues/15)) ([1868bbd](https://github.com/sakamichi-blog-archive/sba-showroom/commit/1868bbda1323f43fee72c021c5f4492c650d311e))
+
+
+### Bug Fixes
+
+* Apply sba-stream behavior ([#18](https://github.com/sakamichi-blog-archive/sba-showroom/issues/18)) ([c3329c7](https://github.com/sakamichi-blog-archive/sba-showroom/commit/c3329c7643962d02ff460e1f743417005d3ae4c8))
+* exit 0 if download produced a file, even on ffmpeg error ([#12](https://github.com/sakamichi-blog-archive/sba-showroom/issues/12)) ([f67e953](https://github.com/sakamichi-blog-archive/sba-showroom/commit/f67e95307abcb9612a82304d3cdbe727a3e450d7))
+* Fix duplicate download passthrough ([#27](https://github.com/sakamichi-blog-archive/sba-showroom/issues/27)) ([7e67529](https://github.com/sakamichi-blog-archive/sba-showroom/commit/7e6752904685acf6fdfbe0f8abd25cbda5ac7ac5))
+* Fix watcher concurrent duplicate recording ([#28](https://github.com/sakamichi-blog-archive/sba-showroom/issues/28)) ([7847660](https://github.com/sakamichi-blog-archive/sba-showroom/commit/7847660a7c4c02f3b3e4ff1bee32d780a4d75271))
+* Fix watcher duplicate recording for aliased room keys ([#29](https://github.com/sakamichi-blog-archive/sba-showroom/issues/29)) ([c1102d9](https://github.com/sakamichi-blog-archive/sba-showroom/commit/c1102d9d6828aee992ba41d2e370d9b62f5a3d76))
+* Poll streaming URLs and download immediately ([#19](https://github.com/sakamichi-blog-archive/sba-showroom/issues/19)) ([f94b71d](https://github.com/sakamichi-blog-archive/sba-showroom/commit/f94b71d4a8446d6afb1bb67b04d01e89d51d934b))
+
 ## [0.2.0](https://github.com/sakamichi-blog-archive/sba-showroom/compare/v0.1.1...v0.2.0) (2026-07-07)
 
 
