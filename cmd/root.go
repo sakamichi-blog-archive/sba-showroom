@@ -30,5 +30,5 @@ func printUsage() {
 	fmt.Println()
 	fmt.Println("Commands:")
 	fmt.Println("  download  Download a SHOWROOM livestream")
-	fmt.Println("  watch     Watch campaign rooms and download when live")
+	fmt.Println("  watch     Watch campaign rooms and download when live (experimental)")
 }
