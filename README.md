@@ -32,6 +32,11 @@ Download a pre-built binary from the [Releases](https://github.com/sakamichi-blo
 
 ## Usage
 
+```
+sba-showroom -h | --help | help       Show usage
+sba-showroom -v | --version | version Print version
+```
+
 ### `download`
 
 Download a single room, waiting for it to go live if it isn't already.
