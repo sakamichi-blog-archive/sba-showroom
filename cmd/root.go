@@ -62,6 +62,7 @@ func printUsage() {
 	fmt.Println("  download  Download a SHOWROOM livestream")
 	fmt.Println("  watch     Watch campaign rooms and download when live (experimental)")
 	fmt.Println("  version   Print version")
+	fmt.Println("  help      Show this help")
 	fmt.Println()
 	fmt.Println("Flags:")
 	fmt.Println("  -h, --help     Show this help")
