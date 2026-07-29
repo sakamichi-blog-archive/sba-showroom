@@ -30,13 +30,13 @@ If `sba-showroom` is too long to type, give it a shorter alias. Add to `mise.tom
 
 ```toml
 [tool_alias]
-sba = "github:sakamichi-blog-archive/sba-showroom"
+sbas = "github:sakamichi-blog-archive/sba-showroom"
 ```
 
 Then install under the alias, renaming the binary to match:
 
 ```sh
-mise use -g "sba[bin=sba]@latest"
+mise use -g "sbas[bin=sbas]@latest"
 ```
 
 ## Usage
