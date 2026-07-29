@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.1](https://github.com/sakamichi-blog-archive/sba-showroom/compare/v0.4.0...v0.4.1) (2026-07-29)
+
+
+### Bug fixes
+
+* create releases as drafts and publish after assets attach ([#39](https://github.com/sakamichi-blog-archive/sba-showroom/issues/39)) ([2935c37](https://github.com/sakamichi-blog-archive/sba-showroom/commit/2935c3745dd09fcf115a87b520e2fddbee340c91))
+
 ## [0.4.0](https://github.com/sakamichi-blog-archive/sba-showroom/compare/v0.3.0...v0.4.0) (2026-07-29)
 
 
