@@ -18,6 +18,27 @@ Download a pre-built binary from the [Releases](https://github.com/sakamichi-blo
 go install github.com/sakamichi-blog-archive/sba-showroom@latest
 ```
 
+### mise
+
+[mise](https://mise.jdx.dev)'s [GitHub backend](https://mise.jdx.dev/dev-tools/backends/github.html) installs the pre-built binary directly from Releases:
+
+```sh
+mise use -g github:sakamichi-blog-archive/sba-showroom
+```
+
+If `sba-showroom` is too long to type, give it a shorter alias. Add to `mise.toml` (or `~/.config/mise/config.toml` for a global alias):
+
+```toml
+[tool_alias]
+sba = "github:sakamichi-blog-archive/sba-showroom"
+```
+
+Then install under the alias, renaming the binary to match:
+
+```sh
+mise use -g "sba[bin=sba]@latest"
+```
+
 ## Usage
 
 ### `download`
