@@ -8,9 +8,17 @@
 
 ## Installation
 
-### GitHub Releases
+Install via mise, Go, or GitHub Releases.
 
-Download a pre-built binary from the [Releases](https://github.com/sakamichi-blog-archive/sba-showroom/releases) page.
+### mise
+
+Install via [mise](https://mise.jdx.dev)'s [GitHub backend](https://mise.jdx.dev/dev-tools/backends/github.html), which pulls the pre-built binary directly from GitHub Releases.
+
+```sh
+mise use -g github:sakamichi-blog-archive/sba-showroom
+# or, to use a custom name like `sbas`
+mise use -g "github:sakamichi-blog-archive/sba-showroom[bin=sbas]"
+```
 
 ### go install
 
@@ -18,19 +26,9 @@ Download a pre-built binary from the [Releases](https://github.com/sakamichi-blo
 go install github.com/sakamichi-blog-archive/sba-showroom@latest
 ```
 
-### mise
+### GitHub Releases
 
-[mise](https://mise.jdx.dev)'s [GitHub backend](https://mise.jdx.dev/dev-tools/backends/github.html) installs the pre-built binary directly from Releases:
-
-```sh
-mise use -g github:sakamichi-blog-archive/sba-showroom
-```
-
-If `sba-showroom` is too long to type, rename the installed binary with the `bin` [tool option](https://mise.jdx.dev/dev-tools/backends/github.html#bin):
-
-```sh
-mise use -g "github:sakamichi-blog-archive/sba-showroom[bin=sbas]@latest"
-```
+Download a pre-built binary from the [Releases](https://github.com/sakamichi-blog-archive/sba-showroom/releases) page.
 
 ## Usage
 
