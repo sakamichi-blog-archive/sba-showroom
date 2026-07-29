@@ -33,8 +33,16 @@ Download a pre-built binary from the [Releases](https://github.com/sakamichi-blo
 ## Usage
 
 ```
-sba-showroom -h | --help | help       Show usage
-sba-showroom -v | --version | version Print version
+Usage: sba-showroom <command> [flags]
+
+Commands:
+  download  Download a SHOWROOM livestream
+  watch     Watch campaign rooms and download when live (experimental)
+  version   Print version
+
+Flags:
+  -h, --help     Show this help
+  -v, --version  Print version
 ```
 
 ### `download`
