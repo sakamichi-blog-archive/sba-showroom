@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.4.0](https://github.com/sakamichi-blog-archive/sba-showroom/compare/v0.3.0...v0.4.0) (2026-07-29)
+
+
+### Features
+
+* Add help and version commands and flags ([#38](https://github.com/sakamichi-blog-archive/sba-showroom/issues/38)) ([f65b44c](https://github.com/sakamichi-blog-archive/sba-showroom/commit/f65b44cf8a45a2ce3adbb5e0d997728854d30ae0))
+
+
+### Bug fixes
+
+* trigger release-please on deps commits ([#35](https://github.com/sakamichi-blog-archive/sba-showroom/issues/35)) ([c88b16f](https://github.com/sakamichi-blog-archive/sba-showroom/commit/c88b16f0c74f830187d8cf0a2e9bce602317fd44))
+
 ## [0.3.0](https://github.com/sakamichi-blog-archive/sba-showroom/compare/v0.2.0...v0.3.0) (2026-07-28)
 
 
