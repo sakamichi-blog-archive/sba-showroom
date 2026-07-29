@@ -39,6 +39,7 @@ Commands:
   download  Download a SHOWROOM livestream
   watch     Watch campaign rooms and download when live (experimental)
   version   Print version
+  help      Show this help
 
 Flags:
   -h, --help     Show this help
