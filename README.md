@@ -26,17 +26,10 @@ go install github.com/sakamichi-blog-archive/sba-showroom@latest
 mise use -g github:sakamichi-blog-archive/sba-showroom
 ```
 
-If `sba-showroom` is too long to type, give it a shorter alias. Add to `mise.toml` (or `~/.config/mise/config.toml` for a global alias):
-
-```toml
-[tool_alias]
-sbas = "github:sakamichi-blog-archive/sba-showroom"
-```
-
-Then install under the alias, renaming the binary to match:
+If `sba-showroom` is too long to type, rename the installed binary with the `bin` [tool option](https://mise.jdx.dev/dev-tools/backends/github.html#bin):
 
 ```sh
-mise use -g "sbas[bin=sbas]@latest"
+mise use -g "github:sakamichi-blog-archive/sba-showroom[bin=sbas]@latest"
 ```
 
 ## Usage
