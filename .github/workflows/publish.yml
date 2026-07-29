@@ -35,7 +35,7 @@ jobs:
         run: |
           NAME="sba-showroom-${TAG}-${GOOS}-${GOARCH}"
           [ "${GOOS}" = "windows" ] && NAME="${NAME}.exe"
-          go build -o "${NAME}" .
+          go build -ldflags "-X github.com/sakamichi-blog-archive/sba-showroom/cmd.version=${TAG}" -o "${NAME}" .
           echo "BINARY=${NAME}" >> "${GITHUB_ENV}"
       - name: Upload to release
         env:

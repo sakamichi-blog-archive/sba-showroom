@@ -32,6 +32,20 @@ Download a pre-built binary from the [Releases](https://github.com/sakamichi-blo
 
 ## Usage
 
+```
+Usage: sba-showroom <command> [flags]
+
+Commands:
+  download  Download a SHOWROOM livestream
+  watch     Watch campaign rooms and download when live (experimental)
+  version   Print version
+  help      Show this help
+
+Flags:
+  -h, --help     Show this help
+  -v, --version  Print version
+```
+
 ### `download`
 
 Download a single room, waiting for it to go live if it isn't already.
