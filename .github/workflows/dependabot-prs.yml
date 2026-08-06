@@ -33,9 +33,7 @@ jobs:
       needs.dependabot-metadata.result == 'success' &&
       needs.dependabot-metadata.outputs.dependency-type != '' &&
       needs.dependabot-metadata.outputs.update-type != '' &&
-      needs.dependabot-metadata.outputs.update-type != 'version-update:semver-major' &&
-      (needs.dependabot-metadata.outputs.dependency-type != 'direct:production' ||
-       needs.dependabot-metadata.outputs.package-ecosystem == 'github_actions')
+      needs.dependabot-metadata.outputs.update-type != 'version-update:semver-major'
     permissions:
       contents: write
       pull-requests: write
