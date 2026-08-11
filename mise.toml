@@ -3,12 +3,12 @@ auto_install = false
 pin = true
 
 [tools]
-actionlint = "1.7.12"
-go = "1.26.4"
-golangci-lint = "2.12.2"
-pinact = "4.1.0"
-shellcheck = "0.11.0"
-zizmor = "1.26.1"
+actionlint = "1"
+go = "1"
+golangci-lint = "2"
+pinact = "4"
+shellcheck = "0.11"
+zizmor = "1"
 
 # Tasks are sorted alphabetically.
 [tasks.build]
@@ -51,4 +51,3 @@ description = "Update GitHub Actions to latest versions and pin to commit SHAs"
 [tasks.test]
 run = "go test ./..."
 description = "Run tests"
-
