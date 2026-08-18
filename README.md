@@ -124,7 +124,7 @@ sba-showroom watch --campaign nogi
 sba-showroom watch --campaign nogi --campaign hinata
 
 # Watch a campaign plus specific rooms not in it
-sba-showroom watch --campaign nogi someroom
+sba-showroom watch --campaign nogi nekojita
 
 # Watch specific rooms only
 sba-showroom watch 46_iwamotorenka https://www.showroom-live.com/46_shibatayuna
