@@ -16,8 +16,17 @@ import (
 
 var roomURLRegex = regexp.MustCompile(`(?i)^https://www\.showroom-live\.com/(r/([-_0-9A-Za-z]+)|([-_0-9A-Za-z]+))$`)
 
-func parseRoomURLKey(rawURL string) (string, error) {
-	u, err := url.Parse(rawURL)
+// A room URL key may contain hyphens but must not start with one, so that a
+// mistyped flag is rejected rather than silently taken as a room.
+var roomURLKeyRegex = regexp.MustCompile(`^[_0-9A-Za-z][-_0-9A-Za-z]*$`)
+
+// parseRoomURLKey accepts either a full SHOWROOM room URL or a bare room URL
+// key (the trailing path segment of such a URL).
+func parseRoomURLKey(input string) (string, error) {
+	if roomURLKeyRegex.MatchString(input) {
+		return input, nil
+	}
+	u, err := url.Parse(input)
 	if err != nil {
 		return "", fmt.Errorf("invalid URL: %w", err)
 	}
@@ -26,7 +35,7 @@ func parseRoomURLKey(rawURL string) (string, error) {
 	u.Path = strings.TrimRight(u.Path, "/")
 	matches := roomURLRegex.FindStringSubmatch(u.String())
 	if matches == nil {
-		return "", fmt.Errorf("URL does not match a supported SHOWROOM format")
+		return "", fmt.Errorf("not a room URL key or a supported SHOWROOM URL")
 	}
 	if matches[2] != "" {
 		return matches[2], nil
@@ -35,32 +44,20 @@ func parseRoomURLKey(rawURL string) (string, error) {
 }
 
 type DownloadOptions struct {
-	URL          string
+	Room         string // full room URL or bare room URL key
 	Retry        bool
 	ExpectedTime *time.Time
 }
 
 func Download(opts DownloadOptions) error {
-	u, err := url.Parse(opts.URL)
+	roomURLKey, err := parseRoomURLKey(opts.Room)
 	if err != nil {
-		return fmt.Errorf("invalid URL: %w", err)
+		return err
 	}
-	u.RawQuery = ""
-	u.Fragment = ""
-	u.Path = strings.TrimRight(u.Path, "/")
-	return downloadLive(opts, u.String())
+	return downloadLive(opts, roomURLKey)
 }
 
-func downloadLive(opts DownloadOptions, urlNoQuery string) error {
-	matches := roomURLRegex.FindStringSubmatch(urlNoQuery)
-	if matches == nil {
-		return fmt.Errorf("URL does not match a supported SHOWROOM format")
-	}
-	roomURLKey := matches[2] // r/KEY form
-	if roomURLKey == "" {
-		roomURLKey = matches[3]
-	}
-
+func downloadLive(opts DownloadOptions, roomURLKey string) error {
 	ctx := context.Background()
 
 	fmt.Printf("Fetching room: %s\n", roomURLKey)
