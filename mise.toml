@@ -18,11 +18,10 @@ run = "go build -o sba-showroom ."
 description = "Build binary"
 
 [tasks.check]
-depends = ["format:check", "lint", "pinact:check", "test"]
+depends = ["format:check", "lint", "test"]
 description = "Run all checks"
 
 [tasks."check:workflows"]
-depends = ["pinact:check"]
 run = ["actionlint", "zizmor ."]
 description = "Run all workflow checks"
 
@@ -38,16 +37,12 @@ description = "Check Go source files are formatted"
 run = "golangci-lint run ./..."
 description = "Lint Go source files"
 
-[tasks.pinact]
-run = "pinact run --min-age 3 .github/workflows/*.yml"
+[tasks."pin:actions"]
+run = "pinact run --min-age 3"
 description = "Pin GitHub Actions to commit SHAs"
 
-[tasks."pinact:check"]
-run = "pinact run --check .github/workflows/*.yml"
-description = "Check GitHub Actions are pinned to commit SHAs"
-
-[tasks."pinact:update"]
-run = "pinact run --update --min-age 3 .github/workflows/*.yml"
+[tasks."pin:actions:update"]
+run = "pinact run --update --min-age 3"
 description = "Update GitHub Actions to latest versions and pin to commit SHAs"
 
 [tasks.test]

@@ -58,11 +58,11 @@ GitHub Actions are pinned to commit SHAs using [pinact](https://github.com/suzuk
 After adding a new action:
 
 ```sh
-mise run pinact
+mise run pin:actions
 ```
 
 To update existing actions to their latest versions:
 
 ```sh
-mise run pinact:update
+mise run pin:actions:update
 ```
