@@ -1,11 +1,17 @@
 .*
+mise.local.lock
+mise.local.toml
+
+!.github/
+!.vscode/
 !.gitignore
-!.github
 !.release-please-manifest.json
 
 *.mp4
 sba-showroom
 
-!.claude
+# Claude Code
+!.claude/
 .claude/worktrees/
 .claude/settings.local.json
+CLAUDE.local.md
