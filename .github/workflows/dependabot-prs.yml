@@ -11,15 +11,13 @@ jobs:
   dependabot-metadata:
     name: Fetch metadata
     runs-on: ubuntu-latest
-    if: |
-      github.event.pull_request.user.login == 'dependabot[bot]' &&
-      github.event.pull_request.head.repo.full_name == github.repository
+    if: github.event.pull_request.user.login == 'dependabot[bot]' && github.event.pull_request.head.repo.full_name == github.repository
     permissions:
       pull-requests: read
     outputs:
       dependency-type: ${{ steps.dependabot-metadata.outputs.dependency-type }}
-      update-type: ${{ steps.dependabot-metadata.outputs.update-type }}
       package-ecosystem: ${{ steps.dependabot-metadata.outputs.package-ecosystem }}
+      update-type: ${{ steps.dependabot-metadata.outputs.update-type }}
     steps:
       - name: Fetch Dependabot metadata
         id: dependabot-metadata
