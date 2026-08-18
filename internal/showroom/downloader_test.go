@@ -269,6 +269,8 @@ func TestParseRoomURLKey(t *testing.T) {
 		{"https://www.showroom-live.com/", "", true},
 		{"46_shibatayuna/extra", "", true},
 		{"46 shibatayuna", "", true},
+		{"--campaign", "", true},
+		{"-no-retry", "", true},
 		{"", "", true},
 		{"https://example.com/46_shibatayuna", "", true},
 		{"not a url", "", true},

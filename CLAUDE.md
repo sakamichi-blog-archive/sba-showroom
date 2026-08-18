@@ -38,7 +38,7 @@ internal/
 ## Key design notes
 
 - `internal/showroom/api.go` exposes `cdnBaseURL` and `showroomBaseURL` package-level vars. Tests override these with `httptest.NewServer` URLs — no real HTTP in tests.
-- `parseRoomURLKey` in `downloader.go` is the single entry point for room arguments, shared by `download` and `watch`. It accepts a bare room URL key (`^[-_0-9A-Za-z]+$`) or a full `https://www.showroom-live.com/[r/]KEY` URL.
+- `parseRoomURLKey` in `downloader.go` is the single entry point for room arguments, shared by `download` and `watch`. It accepts a bare room URL key (`^[_0-9A-Za-z][-_0-9A-Za-z]*$` — a leading `-` is rejected so a mistyped flag is not taken as a room) or a full `https://www.showroom-live.com/[r/]KEY` URL.
 - `selectBestHLS` in `api.go` picks the highest-quality HLS stream from the streaming URL list. It is the single source of stream-selection logic, shared by both `downloader.go` and `watcher.go`.
 - File naming matches the original `sba-stream`: `YYMMDD-{name}-{4hex}.mp4` (date in JST).
 - `watch` starts ffmpeg with `Detached: true` so terminal Ctrl+C does not propagate to ffmpeg. `Stop()` sends SIGINT; falls back to `Kill()` if signal delivery fails.

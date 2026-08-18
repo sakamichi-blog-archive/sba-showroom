@@ -16,7 +16,9 @@ import (
 
 var roomURLRegex = regexp.MustCompile(`(?i)^https://www\.showroom-live\.com/(r/([-_0-9A-Za-z]+)|([-_0-9A-Za-z]+))$`)
 
-var roomURLKeyRegex = regexp.MustCompile(`^[-_0-9A-Za-z]+$`)
+// A room URL key may contain hyphens but must not start with one, so that a
+// mistyped flag is rejected rather than silently taken as a room.
+var roomURLKeyRegex = regexp.MustCompile(`^[_0-9A-Za-z][-_0-9A-Za-z]*$`)
 
 // parseRoomURLKey accepts either a full SHOWROOM room URL or a bare room URL
 // key (the trailing path segment of such a URL).

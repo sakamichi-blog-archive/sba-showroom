@@ -541,3 +541,28 @@ func TestCollectRoomKeys_Rooms(t *testing.T) {
 		})
 	}
 }
+
+func TestCollectRoomKeys_CampaignAndRoomsDedup(t *testing.T) {
+	// A room passed as an argument that a campaign already covers must be
+	// watched once, keeping the campaign's earlier position.
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = fmt.Fprint(w, `{"1st":["46_a","46_b"]}`)
+	}))
+	defer srv.Close()
+
+	orig := campaignRoomsURL["nogi"]
+	campaignRoomsURL["nogi"] = srv.URL
+	defer func() { campaignRoomsURL["nogi"] = orig }()
+
+	got, err := collectRoomKeys(WatchOptions{
+		Campaigns: []string{"nogi"},
+		Rooms:     []string{"46_b", "https://www.showroom-live.com/46_c"},
+	})
+	if err != nil {
+		t.Fatalf("collectRoomKeys() error = %v", err)
+	}
+	want := []string{"46_a", "46_b", "46_c"}
+	if !slices.Equal(got, want) {
+		t.Errorf("collectRoomKeys() = %v, want %v", got, want)
+	}
+}

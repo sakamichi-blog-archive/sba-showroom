@@ -59,7 +59,10 @@ func (w *watcher) claimWatch(roomID int) bool {
 }
 
 // collectRoomKeys resolves campaign slugs and room arguments into a
-// de-duplicated list of room URL keys, preserving the order they were given in.
+// de-duplicated list of room URL keys. Campaign rooms come first, then room
+// arguments in the order given; a key seen twice keeps its first position.
+// Order within a single campaign is not stable — rooms.json groups are decoded
+// into a map.
 func collectRoomKeys(opts WatchOptions) ([]string, error) {
 	seen := make(map[string]bool)
 	var roomKeys []string
