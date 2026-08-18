@@ -51,12 +51,13 @@ Flags:
 Download a single room, waiting for it to go live if it isn't already.
 
 ```
-sba-showroom download [flags] URL [EXPECTED_TIME]
+sba-showroom download [flags] ROOM [EXPECTED_TIME]
 ```
 
-**URL formats**
+**ROOM formats**
 
 ```
+ROOM_URL_KEY
 https://www.showroom-live.com/ROOM_URL_KEY
 https://www.showroom-live.com/r/ROOM_URL_KEY
 ```
@@ -71,7 +72,7 @@ YYYY/MM/DD HH:mm
 
 When provided, the downloader polls every 20 s until the scheduled time, then switches to polling for stream URLs directly.
 
-**Flags** (must appear before the URL)
+**Flags** (must appear before the room)
 
 | Flag | Default | Description |
 |------|---------|-------------|
@@ -80,14 +81,17 @@ When provided, the downloader polls every 20 s until the scheduled time, then sw
 **Examples**
 
 ```sh
-# Download a room (retries on disconnect by default)
+# Download a room by URL key (retries on disconnect by default)
+sba-showroom download 46_iwamotorenka
+
+# The full room URL works too
 sba-showroom download https://www.showroom-live.com/46_iwamotorenka
 
 # Wait for a scheduled stream
-sba-showroom download https://www.showroom-live.com/46_iwamotorenka 17:30
+sba-showroom download 46_iwamotorenka 17:30
 
 # Download once without retrying
-sba-showroom download --no-retry https://www.showroom-live.com/46_iwamotorenka
+sba-showroom download --no-retry 46_iwamotorenka
 ```
 
 ### `watch` (experimental)
@@ -97,10 +101,11 @@ sba-showroom download --no-retry https://www.showroom-live.com/46_iwamotorenka
 Monitor one or more campaign groups and/or individual rooms, automatically downloading any that go live. Multiple rooms are downloaded concurrently.
 
 ```
-sba-showroom watch [flags] [URL ...]
+sba-showroom watch [flags] [ROOM ...]
 ```
 
-At least one `--campaign` or room URL is required.
+At least one `--campaign` or room is required. Rooms accept the same formats as
+[`download`](#download): a bare `ROOM_URL_KEY` or a full room URL.
 
 **Flags**
 
@@ -119,10 +124,10 @@ sba-showroom watch --campaign nogi
 sba-showroom watch --campaign nogi --campaign hinata
 
 # Watch a campaign plus specific rooms not in it
-sba-showroom watch --campaign nogi https://www.showroom-live.com/r/someroom
+sba-showroom watch --campaign nogi someroom
 
 # Watch specific rooms only
-sba-showroom watch https://www.showroom-live.com/46_iwamotorenka https://www.showroom-live.com/46_shibatayuna
+sba-showroom watch 46_iwamotorenka https://www.showroom-live.com/46_shibatayuna
 ```
 
 **Shutdown**

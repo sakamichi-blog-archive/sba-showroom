@@ -22,19 +22,24 @@ func runWatch(args []string) {
 	fs.Var(&campaigns, "campaign", "Campaign to watch (nogi|hinata|sakura); may be repeated")
 	verbose := fs.Bool("verbose", false, "Log room names on startup")
 	fs.Usage = func() {
-		fmt.Println("Usage: sba-showroom watch [--campaign <nogi|hinata|sakura>] [URL ...]")
+		fmt.Println("Usage: sba-showroom watch [--campaign <nogi|hinata|sakura>] [ROOM ...]")
 		fmt.Println()
 		fmt.Println("EXPERIMENTAL: this command is under active development; expect bugs.")
 		fmt.Println()
-		fmt.Println("At least one --campaign or room URL is required.")
+		fmt.Println("At least one --campaign or ROOM is required.")
+		fmt.Println()
+		fmt.Println("ROOM formats:")
+		fmt.Println("  ROOM_URL_KEY")
+		fmt.Println("  https://www.showroom-live.com/ROOM_URL_KEY")
+		fmt.Println("  https://www.showroom-live.com/r/ROOM_URL_KEY")
 		fmt.Println()
 		fmt.Println("Flags:")
 		fs.PrintDefaults()
 	}
 	_ = fs.Parse(args)
 
-	roomURLs := fs.Args()
-	if len(campaigns) == 0 && len(roomURLs) == 0 {
+	rooms := fs.Args()
+	if len(campaigns) == 0 && len(rooms) == 0 {
 		fs.Usage()
 		os.Exit(1)
 	}
@@ -51,7 +56,7 @@ func runWatch(args []string) {
 		}
 	}
 
-	if err := showroom.Watch(showroom.WatchOptions{Campaigns: unique, RoomURLs: roomURLs, Verbose: *verbose}); err != nil {
+	if err := showroom.Watch(showroom.WatchOptions{Campaigns: unique, Rooms: rooms, Verbose: *verbose}); err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
 	}

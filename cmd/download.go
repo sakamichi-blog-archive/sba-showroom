@@ -13,9 +13,10 @@ func runDownload(args []string) {
 	fs := flag.NewFlagSet("download", flag.ExitOnError)
 	noRetry := fs.Bool("no-retry", false, "Stop after stream ends (retry is on by default)")
 	fs.Usage = func() {
-		fmt.Println("Usage: sba-showroom download [flags] URL [EXPECTED_TIME]")
+		fmt.Println("Usage: sba-showroom download [flags] ROOM [EXPECTED_TIME]")
 		fmt.Println()
-		fmt.Println("URL formats:")
+		fmt.Println("ROOM formats:")
+		fmt.Println("  ROOM_URL_KEY")
 		fmt.Println("  https://www.showroom-live.com/ROOM_URL_KEY")
 		fmt.Println("  https://www.showroom-live.com/r/ROOM_URL_KEY")
 		fmt.Println()
@@ -35,7 +36,7 @@ func runDownload(args []string) {
 		os.Exit(1)
 	}
 
-	rawURL := positional[0]
+	room := positional[0]
 	var expectedTime *time.Time
 	if len(positional) >= 2 {
 		t, err := parseExpectedTime(positional[1])
@@ -47,7 +48,7 @@ func runDownload(args []string) {
 	}
 
 	opts := showroom.DownloadOptions{
-		URL:          rawURL,
+		Room:         room,
 		Retry:        !*noRetry,
 		ExpectedTime: expectedTime,
 	}
