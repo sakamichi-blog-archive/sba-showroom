@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"slices"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -513,5 +514,30 @@ func TestWatchRoom_SameRoomTwoAliasesEchoedURLKey(t *testing.T) {
 	}
 	if got := streamCalls.Load(); got != 1 {
 		t.Errorf("stream URL endpoint called %d time(s); want 1 — both aliases recorded concurrently?", got)
+	}
+}
+
+func TestCollectRoomKeys_Rooms(t *testing.T) {
+	tests := []struct {
+		name    string
+		rooms   []string
+		want    []string
+		wantErr bool
+	}{
+		{"bare keys", []string{"46_shibatayuna", "46_iwamotorenka"}, []string{"46_shibatayuna", "46_iwamotorenka"}, false},
+		{"full URLs", []string{"https://www.showroom-live.com/r/46_shibatayuna"}, []string{"46_shibatayuna"}, false},
+		{"mixed forms deduped", []string{"46_shibatayuna", "https://www.showroom-live.com/46_shibatayuna"}, []string{"46_shibatayuna"}, false},
+		{"invalid", []string{"https://example.com/46_shibatayuna"}, nil, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := collectRoomKeys(WatchOptions{Rooms: tt.rooms})
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("collectRoomKeys(%v) error = %v, wantErr %v", tt.rooms, err, tt.wantErr)
+			}
+			if !slices.Equal(got, tt.want) {
+				t.Errorf("collectRoomKeys(%v) = %v, want %v", tt.rooms, got, tt.want)
+			}
+		})
 	}
 }

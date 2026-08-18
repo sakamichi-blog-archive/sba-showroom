@@ -15,7 +15,7 @@ import (
 // WatchOptions configures the Watch command.
 type WatchOptions struct {
 	Campaigns []string
-	RoomURLs  []string // additional room URLs not covered by Campaigns
+	Rooms     []string // additional rooms (full URL or bare room URL key) not covered by Campaigns
 	Verbose   bool
 }
 
@@ -58,9 +58,9 @@ func (w *watcher) claimWatch(roomID int) bool {
 	return true
 }
 
-// Watch fetches rooms for each campaign slug and monitors them for live streams,
-// starting concurrent downloads as rooms go live.
-func Watch(opts WatchOptions) error {
+// collectRoomKeys resolves campaign slugs and room arguments into a
+// de-duplicated list of room URL keys, preserving the order they were given in.
+func collectRoomKeys(opts WatchOptions) ([]string, error) {
 	seen := make(map[string]bool)
 	var roomKeys []string
 
@@ -74,20 +74,29 @@ func Watch(opts WatchOptions) error {
 	for _, slug := range opts.Campaigns {
 		keys, err := fetchCampaignRooms(context.Background(), slug)
 		if err != nil {
-			return fmt.Errorf("campaign %s: %w", slug, err)
+			return nil, fmt.Errorf("campaign %s: %w", slug, err)
 		}
 		for _, k := range keys {
 			add(k)
 		}
 	}
-	for _, rawURL := range opts.RoomURLs {
-		key, err := parseRoomURLKey(rawURL)
+	for _, room := range opts.Rooms {
+		key, err := parseRoomURLKey(room)
 		if err != nil {
-			return fmt.Errorf("room URL %q: %w", rawURL, err)
+			return nil, fmt.Errorf("room %q: %w", room, err)
 		}
 		add(key)
 	}
+	return roomKeys, nil
+}
 
+// Watch fetches rooms for each campaign slug and monitors them for live streams,
+// starting concurrent downloads as rooms go live.
+func Watch(opts WatchOptions) error {
+	roomKeys, err := collectRoomKeys(opts)
+	if err != nil {
+		return err
+	}
 	if len(roomKeys) == 0 {
 		return fmt.Errorf("no rooms to watch")
 	}
