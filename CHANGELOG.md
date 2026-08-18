@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0](https://github.com/sakamichi-blog-archive/sba-showroom/compare/v0.4.1...v0.5.0) (2026-08-18)
+
+
+### Features
+
+* Support room URL keys as arguments ([#52](https://github.com/sakamichi-blog-archive/sba-showroom/issues/52)) ([e561f61](https://github.com/sakamichi-blog-archive/sba-showroom/commit/e561f61897865aa4ef5026a01d84c99e0a333517))
+
 ## [0.4.1](https://github.com/sakamichi-blog-archive/sba-showroom/compare/v0.4.0...v0.4.1) (2026-07-29)
 
 
