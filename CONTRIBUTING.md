@@ -47,8 +47,8 @@ Releases are automated via [Release Please](https://github.com/googleapis/releas
 
 1. Conventional commits merged to `main` are analyzed by Release Please, which opens or updates a Release PR with a bumped version and updated changelog.
 2. Merging the Release PR creates a **draft** GitHub Release.
-3. The same workflow builds binaries for Linux, macOS, and Windows, uploads them to the draft, then publishes the release — which is also what creates the tag.
-4. Once the release is published, Release Please runs again to open the next Release PR.
+3. The same workflow builds binaries for Linux, macOS, and Windows, uploads them to the draft, then publishes the release.
+4. Once the release is published, Release Please runs again — from the same job that opens Release PRs on ordinary pushes — to open the next Release PR.
 
 No manual steps are required — commit messages drive the version bump (feat → minor, fix → patch, breaking change → major).
 

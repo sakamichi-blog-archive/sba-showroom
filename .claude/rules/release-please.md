@@ -2,6 +2,7 @@
 paths:
   - release-please-config.json
   - .github/workflows/release-please.yml
+  - CONTRIBUTING.md
 ---
 
 `changelog-sections` controls which commit types appear in the rendered changelog, which has two effects:
@@ -17,21 +18,30 @@ The version bump level comes from a separate mechanism in `src/versioning-strate
 
 ## `"draft": true` and the build/publish jobs in release-please.yml
 
-GitHub's immutable releases lock a release's assets the instant it's published — `gh release upload` gets HTTP 422 on an already-published release. Draft releases aren't immutable, and a draft's creation doesn't fire an Actions `release` event at all, so the only workable shape is: release-please creates the release as a **draft** (`"draft": true` here), then `release-please.yml`'s `build` job (gated on `release_created`/`tag_name` outputs) uploads binaries to that still-mutable draft, and a final `publish` job flips `--draft=false` only once every platform's binary is attached. Don't move the build/upload logic back to a separate `publish.yml` triggered by `release: published` — that trigger fires after the release is already immutable, which is the original bug.
+GitHub's immutable releases lock a release's assets the instant it's published — `gh release upload` gets HTTP 422 on an already-published release. Draft releases aren't immutable, and a draft's creation doesn't fire an Actions `release` event at all, so the only workable shape is: release-please creates the release as a **draft** (`"draft": true` here), then `release-please.yml`'s `build` job (gated on `release_created`/`tag_name` outputs) uploads binaries to that still-mutable draft, and a `publish` job flips `--draft=false` only once every platform's binary is attached. (`publish` is not the last job — see the next section for `release-pr`, which runs after it.) Don't move the build/upload logic back to a separate `publish.yml` triggered by `release: published` — that trigger fires after the release is already immutable, which is the original bug.
 
-## Why the Release PR is opened by a separate job
+## Known failure mode: a bogus full-history Release PR, and why `release-pr` is a separate job
 
-`release-please-action`'s `main()` calls `manifest.createReleases()` (tags + creates the
-release for a just-merged Release PR) and then, in the same invocation, re-loads the
-manifest and calls `manifest.createPullRequests()` to check whether a new Release PR is
-needed. That second call re-queries GitHub for "the latest release" to know where to stop
-walking commit history.
+`release-please-action`'s `main()` (`src/index.ts`) calls `manifest.createReleases()` and
+then, in the same invocation, re-loads the manifest and calls
+`manifest.createPullRequests()`. The second call re-queries GitHub for "the latest release"
+to know where to stop walking commit history.
 
-With `"draft": true` those two halves are incompatible. **GitHub does not create the git
-tag for a draft release until it is published**, so at the moment `createPullRequests()`
-runs, the release this same run just created is invisible to the lookup. `commitsAfterSha()`
-(`src/manifest.ts`) then hits its fallback bug: when the expected last-release SHA isn't
-found among the walked commits, it returns **all** of them rather than none.
+With `"draft": true` those two halves are incompatible, for a reason that is verifiable in
+release-please's source rather than inferred:
+
+- `releaseGraphQL()` (`src/github-api.ts:563`) ends with `.filter(release => !!release.tagCommit)`.
+  A draft release has a null `tagCommit`, so the release the first half just created is
+  dropped before `manifest.ts` ever sees it. Note this is **not** a draft filter —
+  `isDraft` is selected by the query and mapped onto `ScmRelease.draft`, but it is never
+  consumed as a filter anywhere.
+- The fallback that should have rescued this fails identically: `backfillReleasesFromTags()`
+  (`src/manifest.ts:847`) enumerates real git refs via `GET /repos/{owner}/{repo}/tags`,
+  which a draft's non-existent tag also misses.
+
+With both lookups empty, `commitsAfterSha()` (`src/manifest.ts:1813`) hits its fallback bug —
+when the last-release SHA isn't found among the walked commits it returns **all** of them
+rather than none:
 
 ```ts
 function commitsAfterSha(commits: Commit[], lastReleaseSha: string) {
@@ -44,30 +54,54 @@ function commitsAfterSha(commits: Commit[], lastReleaseSha: string) {
 ```
 
 The symptom is a second PR opened moments after a real release, proposing a much-too-large
-bump with the entire project history dumped into the changelog. This is deterministic, not a
-transient API lag — it fired on both releases cut after `"draft": true` landed:
+bump with the entire project history in its changelog. Because the cause is a code-level
+filter rather than API lag, it is deterministic — it fired on both releases cut after
+`"draft": true` landed in #39, in each case from the same workflow run that cut the release:
 
-| release | release commit merged | draft window | bogus PR |
-|---------|-----------------------|--------------|----------|
-| v0.4.1  | 13:09:27              | → 13:10:52   | #41 at 13:10:07 |
-| v0.5.0  | 03:33:30              | → 03:35:11   | #54 at 03:34:21 |
+| release | release commit merged (UTC) | published (UTC) | bogus PR (UTC) |
+|---------|-----------------------------|-----------------|----------------|
+| v0.4.1  | 2026-07-29 13:09:27         | 13:10:52        | #41 at 13:10:07 |
+| v0.5.0  | 2026-08-20 03:33:30         | 03:35:11        | #54 at 03:34:21 |
 
-Both were created *by the same workflow run* that cut the release, inside the window where
-the release was still a draft and the tag did not yet exist.
+(Times are UTC; this repo's git log renders JST, so `git log` shows these nine hours later.)
 
 **The fix in `release-please.yml`:** the two halves are split across the draft→published
-boundary. The `release-please` job passes `skip-github-pull-request: true`, so it only tags
-and creates the draft release. A final `release-pr` job — `needs: [release-please, publish]`,
-gated on `publish` having either succeeded or been skipped — runs the action again with
-`skip-github-release: true`. By then `publish` has flipped `--draft=false` and the tag is
-real, so the commit walk is correctly bounded. On an ordinary push `build`/`publish` skip and
-`release-pr` runs immediately, which is the pre-split behavior.
+boundary. The `release-please` job passes `skip-github-pull-request: true`, so it only
+creates the draft release — `release_created` and `tag_name` are still emitted, since
+`outputReleases()` is gated on `skip-github-release`, not on this input. A final `release-pr`
+job then runs the action again with `skip-github-release: true`. By then `publish` has
+flipped `--draft=false`, the tag exists, `tagCommit` is populated, and the commit walk is
+correctly bounded. `createPullRequests()` still runs exactly once per push.
 
-Don't collapse these back into one job, and don't drop the `always()` from `release-pr`'s
-condition — without it the job is skipped whenever `publish` is skipped, i.e. on every
-non-release push, and no Release PR is ever opened.
+Its gate has three parts, all load-bearing:
 
-If a bogus PR does appear anyway: close it, don't merge it. A `docs:`/`chore:`/etc. commit
-will not fix or update it (see the `changelog-sections` section above — empty-candidate
-pushes leave existing PRs untouched). Closing it outright is the reliable fix; release-please
-opens a fresh, correct PR the next time a triggering commit lands.
+```yaml
+if: >-
+  ${{ !cancelled() && needs.release-please.result == 'success'
+  && (needs.publish.result == 'success'
+      || needs.release-please.outputs.release_created != 'true') }}
+```
+
+- `!cancelled()` — a `skipped` dependency must not skip this job, or no Release PR is ever
+  opened on ordinary pushes. Do **not** use the default condition. `always()` also works but
+  additionally fires on an explicitly cancelled workflow, which can hit an unpublished draft.
+- `release-please.result == 'success'` — no Release PR after a failed release run.
+- The `publish`/`release_created` disjunction — a job whose dependency **fails** is reported
+  `skipped`, not `failure`, so `publish.result == 'skipped'` means either "no release was
+  cut" or "`build` failed". Only the first is safe. Gating on `release_created` separates
+  them; without it a failed `build` reproduces the original bug exactly.
+
+Don't collapse these back into one job.
+
+**Residual risk:** the new path assumes GitHub's GraphQL reflects the freshly created tag by
+the time `release-pr` queries it. A separate job's runner spin-up is a reasonable buffer, and
+unlike the draft window this is a genuine narrow race rather than a certainty — the
+"deterministic" above describes the *old* failure and is not a guarantee about the new path.
+
+**If a bogus PR appears anyway:** close it, don't merge it. Confirm it's bogus first with
+`git rev-list <last-tag>..main --count` — for #41 this was `0`, i.e. zero real commits since
+the release. A `docs:`/`chore:`/etc. commit will not fix or update it (see the
+`changelog-sections` section above — empty-candidate pushes leave existing PRs untouched). A
+`feat:`/`fix:`/`deps:` commit *might* force a corrected recompute into the same PR, but isn't
+guaranteed. Closing it outright is the reliable fix; release-please opens a fresh, correct PR
+the next time a triggering commit lands.
