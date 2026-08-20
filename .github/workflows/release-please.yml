@@ -25,6 +25,10 @@ jobs:
         id: release
         with:
           token: ${{ steps.app-token.outputs.token }}
+          # The Release PR is opened by the release-pr job instead. Doing it here
+          # would run before publish flips the draft, when the tag does not exist
+          # yet, and release-please would walk the entire history.
+          skip-github-pull-request: true
 
   build:
     needs: release-please
@@ -76,3 +80,26 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh release edit "${TAG}" --draft=false --repo "${{ github.repository }}"
+
+  # Runs after publish so the tag from a freshly cut release exists before
+  # release-please looks up the latest release to bound its commit walk. Also
+  # runs on ordinary pushes, where release-please and publish are no-ops.
+  release-pr:
+    needs: [release-please, publish]
+    if: >-
+      ${{ always() && needs.release-please.result == 'success'
+      && (needs.publish.result == 'success' || needs.publish.result == 'skipped') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        id: app-token
+        with:
+          client-id: ${{ vars.RELEASER_APP_CLIENT_ID }}
+          private-key: ${{ secrets.RELEASER_APP_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+          permission-issues: write
+      - uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          skip-github-release: true
